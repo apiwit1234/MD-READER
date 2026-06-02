@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #__next { height: 100%; }
+
+/* Default (pre-hydration) mirrors Light. */
+:root,
+[data-theme="light"] {
+  --c-bg: 255 255 255;
+  --c-surface: 248 250 252;
+  --c-surface-2: 241 245 249;
+  --c-fg: 15 23 42;
+  --c-muted: 100 116 139;
+  --c-border: 226 232 240;
+  --c-accent: 37 99 235;
+  --c-accent-fg: 255 255 255;
+  --c-accent-soft: 239 246 255;
+  --radius: 6px;
+}
+
+[data-theme="dark"] {
+  --c-bg: 15 23 42;
+  --c-surface: 30 41 59;
+  --c-surface-2: 51 65 85;
+  --c-fg: 241 245 249;
+  --c-muted: 148 163 184;
+  --c-border: 51 65 85;
+  --c-accent: 59 130 246;
+  --c-accent-fg: 255 255 255;
+  --c-accent-soft: 29 58 110;
+  --radius: 6px;
+}
+
+[data-theme="retro"] {
+  --c-bg: 247 242 233;
+  --c-surface: 255 253 248;
+  --c-surface-2: 239 231 216;
+  --c-fg: 59 53 48;
+  --c-muted: 138 126 112;
+  --c-border: 227 217 198;
+  --c-accent: 129 216 208;
+  --c-accent-fg: 42 61 59;
+  --c-accent-soft: 226 244 242;
+  --radius: 10px;
+}
+
+[data-theme="space"] {
+  --c-bg: 10 14 31;
+  --c-surface: 18 24 51;
+  --c-surface-2: 28 37 71;
+  --c-fg: 231 234 246;
+  --c-muted: 128 137 174;
+  --c-border: 40 49 99;
+  --c-accent: 139 124 246;
+  --c-accent-fg: 255 255 255;
+  --c-accent-soft: 34 40 90;
+  --radius: 10px;
+}
+
+[data-theme="moneh"] {
+  --c-bg: 255 255 255;
+  --c-surface: 246 247 249;
+  --c-surface-2: 236 238 242;
+  --c-fg: 17 19 26;
+  --c-muted: 107 114 128;
+  --c-border: 230 232 236;
+  --c-accent: 91 75 219;
+  --c-accent-fg: 255 255 255;
+  --c-accent-soft: 238 235 252;
+  --radius: 14px;
+}
+
+body {
+  @apply bg-bg text-fg;
+}
+
+/* Subtle starfield for the Space theme. */
+[data-theme="space"] body {
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.7), transparent),
+    radial-gradient(1px 1px at 67% 58%, rgba(197,210,255,.6), transparent),
+    radial-gradient(1px 1px at 44% 81%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 86% 18%, rgba(165,180,252,.6), transparent),
+    radial-gradient(1px 1px at 28% 64%, rgba(255,255,255,.4), transparent);
+  background-attachment: fixed;
+}
+
+/* Themed scrollbars (app chrome + xterm viewport). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-border)) rgb(var(--c-surface));
+}
+::-webkit-scrollbar,
+.xterm-viewport::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track,
+.xterm-viewport::-webkit-scrollbar-track { background: rgb(var(--c-surface)); }
+::-webkit-scrollbar-thumb,
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-border));
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover,
+.xterm-viewport::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent)); }
+
+/* Search find-hit highlights (from the search feature) — preserved.
+   The `.dark` class is applied for any dark-base theme (see page.tsx),
+   so Space gets the dark variant too. */
+.md-find-hit {
+  background-color: rgb(254 240 138);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.dark .md-find-hit {
+  background-color: rgba(202 138 4 / 0.4);
+}
+.md-find-hit--active {
+  background-color: rgb(253 186 116);
+  outline: 1px solid rgb(249 115 22);
+}
+.dark .md-find-hit--active {
+  background-color: rgb(234 88 12);
+}
+
+/* Mermaid (SVG) label matches: SVG <text> can't be wrapped in <mark>, so we
+   recolor the matched text element instead. !important overrides mermaid's
+   inline fill. */
+text.md-find-hit, text.md-find-hit tspan, tspan.md-find-hit {
+  fill: #b45309 !important;
+  font-weight: 700 !important;
+}
+.dark text.md-find-hit, .dark text.md-find-hit tspan, .dark tspan.md-find-hit {
+  fill: #fbbf24 !important;
+}
+text.md-find-hit--active, text.md-find-hit--active tspan, tspan.md-find-hit--active {
+  fill: #dc2626 !important;
+}
+.dark text.md-find-hit--active, .dark text.md-find-hit--active tspan, .dark tspan.md-find-hit--active {
+  fill: #f87171 !important;
+}
+
+/* Whole-line highlight on the block element (paragraph, list item, heading, etc.)
+   containing the active match. Gives users a clear "you are here" indicator. */
+.md-find-line {
+  background-color: rgba(254, 240, 138, 0.35);
+  box-shadow: inset 3px 0 0 rgb(250 204 21);
+  border-radius: 3px;
+  transition: background-color 0.15s ease-out;
+}
+.dark .md-find-line {
+  background-color: rgba(202, 138, 4, 0.18);
+  box-shadow: inset 3px 0 0 rgb(202 138 4);
+}

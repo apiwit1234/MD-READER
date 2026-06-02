@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — Acme</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --fg: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #6366f1;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 600px at 50% -10%, #1e293b, var(--bg));
+      color: var(--fg);
+    }
+    .card {
+      width: 100%;
+      max-width: 380px;
+      padding: 2rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+    .brand .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    h1 { margin: 0 0 0.25rem; font-size: 1.4rem; }
+    p.sub { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.9rem; }
+    label { display: block; margin: 0 0 0.35rem; font-size: 0.85rem; color: var(--muted); }
+    .field { margin-bottom: 1rem; }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.7rem 0.85rem;
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--fg);
+      font-size: 0.95rem;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
+    }
+    .row a { color: var(--accent); text-decoration: none; }
+    button.submit {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    button.submit:hover { background: #4f46e5; }
+    .footer { margin-top: 1.25rem; text-align: center; font-size: 0.85rem; color: var(--muted); }
+    .footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand"><span class="dot"></span> Acme</div>
+    <h1>Welcome back</h1>
+    <p class="sub">Sign in to your account to continue.</p>
+
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+
+      <div class="row">
+        <label style="display:flex; align-items:center; gap:0.4rem; color:var(--fg);">
+          <input type="checkbox" name="remember" /> Remember me
+        </label>
+        <a href="#reset">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="submit">Sign in</button>
+    </form>
+
+    <p class="footer">Don't have an account? <a href="#signup">Sign up</a></p>
+  </main>
+
+  <script>
+    const form = document.getElementById('login-form');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = form.email.value.trim();
+      const password = form.password.value;
+      if (!email || !password) {
+        alert('Please enter both email and password.');
+        return;
+      }
+      // Demo only — no real authentication.
+      console.log('Login attempt:', { email, remember: form.remember.checked });
+      alert('Signed in as ' + email + ' (demo)');
+    });
+  </script>
+</body>
+</html>
