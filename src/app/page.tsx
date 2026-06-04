@@ -20,6 +20,7 @@ import { BottomPanel } from '@/components/BottomPanel';
 import { SearchPanel, type OpenResultArg } from '@/components/SearchPanel';
 import { SearchModal } from '@/components/SearchModal';
 import { installGlobalKeyboard } from '@/lib/keyboard';
+import { flagFromPanelEvent } from '@/lib/panel-sync';
 import { revealFile } from '@/lib/sidebar-events';
 import { ModeSwitcher } from '@/components/ModeSwitcher';
 import type { Mode } from '@/lib/mode';
@@ -972,6 +973,14 @@ export default function Page() {
             collapsible
             collapsedSize={0}
             className="overflow-hidden"
+            onCollapse={() => {
+              const next = flagFromPanelEvent('collapse', modeRef.current);
+              if (next !== null) setViewFlags((f) => (f.sidebar === next ? f : { ...f, sidebar: next }));
+            }}
+            onExpand={() => {
+              const next = flagFromPanelEvent('expand', modeRef.current);
+              if (next !== null) setViewFlags((f) => (f.sidebar === next ? f : { ...f, sidebar: next }));
+            }}
           >
             <Sidebar
               folders={state.openedFolders}
@@ -1133,6 +1142,14 @@ export default function Page() {
                 collapsible
                 collapsedSize={0}
                 className="overflow-hidden"
+                onCollapse={() => {
+                  const next = flagFromPanelEvent('collapse', modeRef.current);
+                  if (next !== null) setBottomPanel((p) => (p.open === next ? p : { ...p, open: next }));
+                }}
+                onExpand={() => {
+                  const next = flagFromPanelEvent('expand', modeRef.current);
+                  if (next !== null) setBottomPanel((p) => (p.open === next ? p : { ...p, open: next }));
+                }}
               >
                 <BottomPanel
                   activeTab={bottomPanel.activeTab}
