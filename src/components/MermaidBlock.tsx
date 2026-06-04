@@ -4,6 +4,7 @@ import mermaid from 'mermaid';
 import svgPanZoom from 'svg-pan-zoom';
 import type { Theme } from '@/types';
 import { themeMode } from '@/lib/themes';
+import { normalizeMermaidEntities } from '@/lib/mermaid-entities';
 
 type Props = {
   source: string;
@@ -86,7 +87,21 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
     mermaid
       .render(id, source)
       .then(({ svg }) => { if (!cancelled) setSvgMarkup(svg); })
-      .catch((e) => { if (!cancelled) setError((e as Error).message || 'render error'); });
+      .catch((e) => {
+        // Entities like '&lt;' break mermaid's parser (their ';' ends the
+        // statement). Retry once with them rewritten to mermaid '#N;' escapes;
+        // sources without entities are unchanged, so no retry happens.
+        const normalized = normalizeMermaidEntities(source);
+        const originalError = (e as Error).message || 'render error';
+        if (cancelled || normalized === source) {
+          if (!cancelled) setError(originalError);
+          return;
+        }
+        mermaid
+          .render(`${id}-retry`, normalized)
+          .then(({ svg }) => { if (!cancelled) setSvgMarkup(svg); })
+          .catch(() => { if (!cancelled) setError(originalError); });
+      });
     return () => { cancelled = true; };
   }, [source, theme]);
 
