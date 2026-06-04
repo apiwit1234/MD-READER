@@ -21,6 +21,7 @@ import { SearchPanel, type OpenResultArg } from '@/components/SearchPanel';
 import { SearchModal } from '@/components/SearchModal';
 import { installGlobalKeyboard } from '@/lib/keyboard';
 import { flagFromPanelEvent } from '@/lib/panel-sync';
+import { shouldAutoOpenDefaultFolder } from '@/lib/default-folder';
 import { revealFile } from '@/lib/sidebar-events';
 import { ModeSwitcher } from '@/components/ModeSwitcher';
 import type { Mode } from '@/lib/mode';
@@ -114,6 +115,7 @@ export default function Page() {
   // Handle for the TerminalPanel component to type into its active terminal.
   const terminalHandleRef = useRef<{ typeIntoActive: (text: string) => void } | null>(null);
   const contentStoreRef = useRef<ContentStore>(new ContentStore());
+  const defaultFolderTriedRef = useRef(false);
   // Bump to force a re-render when dirty state changes (the store itself is a ref).
   const [bufferTick, setBufferTick] = useState(0);
   // Last-known dirty flag per path, so we only re-render on clean<->dirty transitions
@@ -136,6 +138,22 @@ export default function Page() {
     setHydrated(true);
     setBridgeMissing(!hasApi());
   }, []);
+
+  // Auto-open the configured default folder once per app launch.
+  useEffect(() => {
+    if (!hydrated || defaultFolderTriedRef.current) return;
+    defaultFolderTriedRef.current = true;
+    if (!hasApi() || !shouldAutoOpenDefaultFolder(state.defaultFolder, state.openedFolders)) return;
+    const folder = state.defaultFolder!;
+    getApi().fs.browse(folder)
+      .then(() => openFolder(folder))
+      .catch((e) => {
+        void getApi().app.logError('defaultFolder', `cannot open "${folder}": ${e instanceof Error ? e.message : String(e)}`);
+        showToast(`Default folder not found: ${folder}`);
+      });
+    // run once after hydration; state is read from that render's closure
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   // Receive initial state via IPC for spawned (tear-off) windows.
   useEffect(() => {
@@ -543,6 +561,10 @@ export default function Page() {
 
   function setFavorites(favorites: [Theme, Theme]) {
     setState((s) => ({ ...s, themeFavorites: favorites }));
+  }
+
+  function setDefaultFolder(path: string | null) {
+    setState((s) => ({ ...s, defaultFolder: path }));
   }
 
   function openFolder(hostPath: string) {
@@ -955,6 +977,8 @@ export default function Page() {
         favorites={state.themeFavorites}
         onSelectTheme={setTheme}
         onSetFavorites={setFavorites}
+        defaultFolder={state.defaultFolder}
+        onSetDefaultFolder={setDefaultFolder}
       />
 
       {bridgeMissing && (

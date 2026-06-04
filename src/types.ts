@@ -39,6 +39,8 @@ export type AppState = {
   openedFolders: OpenedFolder[];
   openTabs: OpenTab[];
   recentFolders: RecentFolder[];
+  /** Folder auto-opened on launch (Settings → Startup). Null = disabled. */
+  defaultFolder: string | null;
 };
 
 export type BrowseEntry = { name: string; type: 'dir' };

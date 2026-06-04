@@ -10,9 +10,11 @@ type Props = {
   favorites: [Theme, Theme];
   onSelectTheme: (theme: Theme) => void;
   onSetFavorites: (favorites: [Theme, Theme]) => void;
+  defaultFolder: string | null;
+  onSetDefaultFolder: (path: string | null) => void;
 };
 
-export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, onSetFavorites }: Props) {
+export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, onSetFavorites, defaultFolder, onSetDefaultFolder }: Props) {
   if (!open) return null;
 
   function setFav(slot: 0 | 1, value: Theme) {
@@ -97,6 +99,33 @@ export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, 
               </select>
             </label>
           ))}
+        </div>
+
+        <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Startup</div>
+        <div className="flex items-center justify-between gap-2 rounded-theme border border-border p-2.5 text-sm">
+          <div className="min-w-0">
+            <span className="block text-[10px] uppercase tracking-wide text-muted">Default folder (opens on launch)</span>
+            <span className="block truncate text-fg" title={defaultFolder ?? undefined}>{defaultFolder ?? 'Not set'}</span>
+          </div>
+          <div className="flex shrink-0 gap-1.5">
+            <button
+              type="button"
+              disabled={!hasApi()}
+              onClick={() => { void getApi().fs.pickDirectory().then((p) => { if (p) onSetDefaultFolder(p); }); }}
+              className="rounded-theme border border-border px-2 py-1 text-xs text-fg hover:bg-surface-2 disabled:opacity-40"
+            >
+              Browse…
+            </button>
+            <button
+              type="button"
+              aria-label="Clear default folder"
+              disabled={!defaultFolder}
+              onClick={() => onSetDefaultFolder(null)}
+              className="rounded-theme border border-border px-2 py-1 text-xs text-fg hover:bg-surface-2 disabled:opacity-40"
+            >
+              Clear
+            </button>
+          </div>
         </div>
 
         <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Diagnostics</div>

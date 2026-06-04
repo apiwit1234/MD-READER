@@ -17,6 +17,7 @@ export function defaultState(): AppState {
     openedFolders: [],
     openTabs: [],
     recentFolders: [],
+    defaultFolder: null,
   };
 }
 
@@ -55,6 +56,7 @@ export function loadState(): AppState {
       openedFolders: parsed.openedFolders as AppState['openedFolders'],
       openTabs: parsed.openTabs as AppState['openTabs'],
       recentFolders: parsed.recentFolders as AppState['recentFolders'],
+      defaultFolder: typeof parsed.defaultFolder === 'string' ? parsed.defaultFolder : null,
     };
   } catch {
     return defaultState();
