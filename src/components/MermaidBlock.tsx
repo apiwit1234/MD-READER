@@ -5,6 +5,17 @@ import svgPanZoom from 'svg-pan-zoom';
 import type { Theme } from '@/types';
 import { themeMode } from '@/lib/themes';
 import { normalizeMermaidEntities } from '@/lib/mermaid-entities';
+import { getApi, hasApi } from '@/lib/electron-api';
+
+/** Every failed diagram lands in the error-logs folder (with its source) so the
+ *  user can send the file when reporting a bug. */
+function reportMermaidError(message: string, source: string): void {
+  try {
+    if (hasApi()) void getApi().app.logError('mermaid', `${message}\n--- diagram source ---\n${source}`);
+  } catch {
+    // reporting must never break rendering
+  }
+}
 
 type Props = {
   source: string;
@@ -94,13 +105,21 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
         const normalized = normalizeMermaidEntities(source);
         const originalError = (e as Error).message || 'render error';
         if (cancelled || normalized === source) {
-          if (!cancelled) setError(originalError);
+          if (!cancelled) {
+            setError(originalError);
+            reportMermaidError(originalError, source);
+          }
           return;
         }
         mermaid
           .render(`${id}-retry`, normalized)
           .then(({ svg }) => { if (!cancelled) setSvgMarkup(svg); })
-          .catch(() => { if (!cancelled) setError(originalError); });
+          .catch(() => {
+            if (!cancelled) {
+              setError(originalError);
+              reportMermaidError(originalError, source);
+            }
+          });
       });
     return () => { cancelled = true; };
   }, [source, theme]);

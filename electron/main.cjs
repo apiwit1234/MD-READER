@@ -8,10 +8,24 @@ const { createReadStream, existsSync, statSync, appendFileSync, watch: fsWatch }
 const { scanFiles } = require('./search-core.cjs');
 const git = require('./git.cjs');
 const { createSettingsStore } = require('./settings.cjs');
+const { createErrorFileWriter } = require('./log-files.cjs');
 
-// --- Error logging: append to a file the user can copy when reporting issues. ---
+// --- Error logging ---
+// Everything goes to userData/logs: a running mdreader.log PLUS one file per
+// error, so the user can open the folder and send the relevant files when
+// reporting a bug.
+function logsDirPath() {
+  const dir = path.join(app.getPath('userData'), 'logs');
+  try { require('node:fs').mkdirSync(dir, { recursive: true }); } catch {}
+  return dir;
+}
 function logFilePath() {
-  return path.join(app.getPath('userData'), 'mdreader.log');
+  return path.join(logsDirPath(), 'mdreader.log');
+}
+let errorFileWriter = null;
+function writeErrorFile(scope, message) {
+  if (!errorFileWriter) errorFileWriter = createErrorFileWriter(logsDirPath());
+  errorFileWriter(scope, message);
 }
 function appendLog(scope, message) {
   try {
@@ -19,6 +33,7 @@ function appendLog(scope, message) {
   } catch {
     // logging must never throw
   }
+  if (scope !== 'info') writeErrorFile(scope, message);
 }
 process.on('uncaughtException', (err) => appendLog('uncaughtException', (err && err.stack) || String(err)));
 process.on('unhandledRejection', (reason) => appendLog('unhandledRejection', (reason && reason.stack) || String(reason)));
@@ -45,10 +60,12 @@ ipcMain.handle('clipboard:saveImage', () => {
     return null;
   }
 });
+// Opens the logs FOLDER (running log + one file per error) so the user can
+// pick files to send when reporting a bug.
 ipcMain.handle('app:openLog', async () => {
-  const p = logFilePath();
-  if (!existsSync(p)) appendLog('info', 'log opened (no prior errors)');
-  return shell.openPath(p);
+  const dir = logsDirPath();
+  if (!existsSync(logFilePath())) appendLog('info', 'log opened (no prior errors)');
+  return shell.openPath(dir);
 });
 
 // --- App settings (userData/settings.json) ---

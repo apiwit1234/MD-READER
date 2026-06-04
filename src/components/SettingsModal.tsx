@@ -173,14 +173,14 @@ export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, 
 
         <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Diagnostics</div>
         <div className="flex items-center justify-between rounded-theme border border-border p-2.5 text-sm">
-          <span className="text-muted">Error log (attach this when reporting a bug)</span>
+          <span className="text-muted">Error logs — one file per error; send them when reporting a bug</span>
           <button
             type="button"
             disabled={!hasApi()}
             onClick={() => { if (hasApi()) void getApi().app.openLog(); }}
-            className="rounded-theme border border-border px-2 py-1 text-xs text-fg hover:bg-surface-2 disabled:opacity-40"
+            className="shrink-0 rounded-theme border border-border px-2 py-1 text-xs text-fg hover:bg-surface-2 disabled:opacity-40"
           >
-            Open error log
+            Open logs folder
           </button>
         </div>
       </div>
