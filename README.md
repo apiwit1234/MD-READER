@@ -2,56 +2,58 @@
 
 Personal markdown reader desktop app (Electron + Next.js) with multi-folder
 navigation, interactive Mermaid diagrams, an embedded terminal, a Git panel,
-resizable panels, and light/dark theme.
+resizable panels, and Light / Dark / Cartoon themes.
 
-## Requirements
+## Install (users)
 
-- Node 20+ (Node 18 minimum)
-- Windows (the app ships as a Windows desktop build; native `node-pty` powers the terminal)
+1. Download the latest `MD-Reader-X.Y.Z-x64.exe` from
+   [GitHub Releases](https://github.com/apiwit1234/MD-READER/releases).
+2. Run it. The installer lets you:
+   - choose the install folder (default: `%LOCALAPPDATA%\Programs\MD Reader`)
+   - tick/untick **Create a desktop shortcut**
+3. Done. A Start Menu entry is always created.
 
-## Install
+**Updates are automatic**: the app checks GitHub Releases shortly after
+launch, downloads new versions in the background, and installs them when you
+close the app. Disable or trigger manually in **Settings → Updates**.
+Reinstalling or updating never touches your settings (they live in
+`%APPDATA%`).
+
+> Windows SmartScreen may warn on first install — builds are unsigned.
+> Click "More info" → "Run anyway".
+
+## Develop
+
+Requirements: Node 20+, Windows (native `node-pty` powers the terminal).
 
 ```sh
 npm install
+npm run dev        # Next.js dev server + Electron with hot reload
 ```
 
-If the embedded terminal fails to start after install or an Electron upgrade,
-rebuild the native module against Electron:
+If the embedded terminal fails to start after install or an Electron upgrade:
 
 ```sh
 npx electron-rebuild
 ```
 
-## Develop
-
-Runs the Next.js dev server and Electron together (hot reload):
-
-```sh
-npm run dev
-```
-
-This starts Next on http://localhost:3000 and launches the Electron window
-pointed at it. Close the window to stop.
-
 ## Test
 
 ```sh
-npm test          # run the Vitest suite once
+npm test           # run the Vitest suite once
 npm run test:watch
 ```
 
-## Build a release version
-
-Produces a distributable Windows app under `release/` via electron-builder:
+## Build & release
 
 ```sh
-npm run dist            # installer
+npm run dist            # NSIS installer (+ zip) under release/
 npm run dist:portable   # single portable .exe
 npm run dist:dir        # unpacked dir (fast, for local checks)
 ```
 
-`build:next` runs automatically before packaging. Builds are unsigned
-(code-signing discovery is disabled for internal use).
+Publishing a release that installed apps auto-update to:
+see **[docs/RELEASING.md](docs/RELEASING.md)**.
 
 ## Workflow & versioning
 

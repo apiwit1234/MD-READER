@@ -123,6 +123,9 @@
       ],
       "artifactName": "MD-Reader-${version}-${arch}.${ext}"
     },
+    "portable": {
+      "artifactName": "MD-Reader-${version}-${arch}-portable.${ext}"
+    },
     "fileAssociations": [
       {
         "ext": "md",
