@@ -76,6 +76,15 @@ body {
   border: 3px solid rgb(17 24 39);
   box-shadow: 6px 6px 0 rgb(17 24 39);
 }
+/* The pale orange accent works as a BACKGROUND (with ink text) but is
+   unreadable as text/border color on cream. Remap those usages to the
+   gitingest coral + ink. */
+[data-theme="cartoon"] .text-accent {
+  color: rgb(254 74 96);
+}
+[data-theme="cartoon"] .border-accent {
+  border-color: rgb(17 24 39);
+}
 
 /* Themed scrollbars (app chrome + xterm viewport). */
 * {
