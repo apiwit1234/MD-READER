@@ -86,6 +86,15 @@ body {
   border-color: rgb(17 24 39);
 }
 
+/* Smooth programmatic panel open/close (toggles). Disabled while a resize
+   handle is being dragged so resizing stays 1:1 with the pointer. */
+[data-panel] {
+  transition: flex 200ms ease-out;
+}
+[data-panel-group]:has([data-resize-handle-active]) [data-panel] {
+  transition: none;
+}
+
 /* Themed scrollbars (app chrome + xterm viewport). */
 * {
   scrollbar-width: thin;
