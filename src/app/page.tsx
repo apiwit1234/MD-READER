@@ -1159,7 +1159,7 @@ export default function Page() {
                   terminal={
                     terminalShownOnce ? (
                       <TerminalPanel
-                        theme={themeMode(state.theme)}
+                        theme={state.theme}
                         visible={bottomPanel.open && bottomPanel.activeTab === 'terminal'}
                         onReady={(h) => { terminalHandleRef.current = h; }}
                       />

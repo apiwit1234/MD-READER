@@ -32,58 +32,49 @@ html, body, #__next { height: 100%; }
   --radius: 6px;
 }
 
-[data-theme="retro"] {
-  --c-bg: 247 242 233;
-  --c-surface: 255 253 248;
-  --c-surface-2: 239 231 216;
-  --c-fg: 59 53 48;
-  --c-muted: 138 126 112;
-  --c-border: 227 217 198;
-  --c-accent: 129 216 208;
-  --c-accent-fg: 42 61 59;
-  --c-accent-soft: 226 244 242;
-  --radius: 10px;
-}
-
-[data-theme="space"] {
-  --c-bg: 10 14 31;
-  --c-surface: 18 24 51;
-  --c-surface-2: 28 37 71;
-  --c-fg: 231 234 246;
-  --c-muted: 128 137 174;
-  --c-border: 40 49 99;
-  --c-accent: 139 124 246;
-  --c-accent-fg: 255 255 255;
-  --c-accent-soft: 34 40 90;
-  --radius: 10px;
-}
-
-[data-theme="moneh"] {
-  --c-bg: 255 255 255;
-  --c-surface: 246 247 249;
-  --c-surface-2: 236 238 242;
-  --c-fg: 17 19 26;
-  --c-muted: 107 114 128;
-  --c-border: 230 232 236;
-  --c-accent: 91 75 219;
-  --c-accent-fg: 255 255 255;
-  --c-accent-soft: 238 235 252;
-  --radius: 14px;
+/* Cartoon — gitingest.com-inspired neo-brutalist (cream, thick ink borders,
+   hard offset shadows). Light-base. */
+[data-theme="cartoon"] {
+  --c-bg: 255 253 248;
+  --c-surface: 255 244 218;
+  --c-surface-2: 235 219 183;
+  --c-fg: 17 24 39;
+  --c-muted: 75 85 99;
+  --c-border: 17 24 39;
+  --c-accent: 255 196 128;
+  --c-accent-fg: 17 24 39;
+  --c-accent-soft: 255 233 201;
+  --radius: 4px;
 }
 
 body {
   @apply bg-bg text-fg;
 }
 
-/* Subtle starfield for the Space theme. */
-[data-theme="space"] body {
-  background-image:
-    radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.7), transparent),
-    radial-gradient(1px 1px at 67% 58%, rgba(197,210,255,.6), transparent),
-    radial-gradient(1px 1px at 44% 81%, rgba(255,255,255,.5), transparent),
-    radial-gradient(1px 1px at 86% 18%, rgba(165,180,252,.6), transparent),
-    radial-gradient(1px 1px at 28% 64%, rgba(255,255,255,.4), transparent);
-  background-attachment: fixed;
+/* Neo-brutalist chrome: every control that already draws a border gets thick
+   ink + a hard shadow, with the gitingest press-down hover. Borderless icon
+   buttons are left alone (they'd look too heavy). */
+[data-theme="cartoon"] button[class*="border"],
+[data-theme="cartoon"] input[type="text"],
+[data-theme="cartoon"] input[type="search"],
+[data-theme="cartoon"] select,
+[data-theme="cartoon"] textarea {
+  border-width: 2px;
+  border-color: rgb(17 24 39);
+  box-shadow: 2px 2px 0 rgb(17 24 39);
+}
+[data-theme="cartoon"] button[class*="border"]:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 rgb(17 24 39);
+}
+[data-theme="cartoon"] button[class*="border"]:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgb(17 24 39);
+}
+/* Modal / floating cards (all use shadow-xl today) get the big offset shadow. */
+[data-theme="cartoon"] .shadow-xl {
+  border: 3px solid rgb(17 24 39);
+  box-shadow: 6px 6px 0 rgb(17 24 39);
 }
 
 /* Themed scrollbars (app chrome + xterm viewport). */

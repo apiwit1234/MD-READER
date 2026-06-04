@@ -12,19 +12,9 @@ export const terminalThemes: Record<Theme, ITheme> = {
     black: '#475569', red: '#F87171', green: '#4ADE80', yellow: '#FBBF24', blue: '#60A5FA', magenta: '#C084FC', cyan: '#22D3EE', white: '#E2E8F0',
     brightBlack: '#94A3B8', brightRed: '#FCA5A5', brightGreen: '#86EFAC', brightYellow: '#FDE68A', brightBlue: '#93C5FD', brightMagenta: '#D8B4FE', brightCyan: '#67E8F9', brightWhite: '#F8FAFC',
   },
-  retro: {
-    background: '#2B2622', foreground: '#F2E8D8', cursor: '#81D8D0', cursorAccent: '#2B2622', selectionBackground: '#4A4138',
-    black: '#8A7B68', red: '#E5A98C', green: '#C2D488', yellow: '#E3E68F', blue: '#9AE0D9', magenta: '#C29BE6', cyan: '#9AE0D9', white: '#F2E8D8',
-    brightBlack: '#B6A892', brightRed: '#F0BFA3', brightGreen: '#D4E59A', brightYellow: '#EFF0A0', brightBlue: '#ADEAE3', brightMagenta: '#D4B0F0', brightCyan: '#ADEAE3', brightWhite: '#FFFDF8',
-  },
-  space: {
-    background: '#0A0E1F', foreground: '#C7D0FF', cursor: '#8B7CF6', cursorAccent: '#0A0E1F', selectionBackground: '#22285A',
-    black: '#4A5388', red: '#FB7185', green: '#5EEAD4', yellow: '#FCD34D', blue: '#A79BFA', magenta: '#F0ABFC', cyan: '#5EEAD4', white: '#C7D0FF',
-    brightBlack: '#8B95C9', brightRed: '#FDA4AF', brightGreen: '#99F6E4', brightYellow: '#FDE68A', brightBlue: '#C4B5FD', brightMagenta: '#F5D0FE', brightCyan: '#A5F3FC', brightWhite: '#E7EAF6',
-  },
-  moneh: {
-    background: '#14151F', foreground: '#E6E8EC', cursor: '#5B4BDB', cursorAccent: '#14151F', selectionBackground: '#2A2C3D',
-    black: '#4C4F66', red: '#FF6B6B', green: '#00C896', yellow: '#FFB454', blue: '#A99CF9', magenta: '#C084FC', cyan: '#22D3EE', white: '#E6E8EC',
-    brightBlack: '#8B8FA8', brightRed: '#FF8787', brightGreen: '#34E0B0', brightYellow: '#FFC97A', brightBlue: '#A99CF9', brightMagenta: '#D8B4FE', brightCyan: '#67E8F9', brightWhite: '#FFFFFF',
+  cartoon: {
+    background: '#FFF4DA', foreground: '#111827', cursor: '#FE4A60', cursorAccent: '#FFF4DA', selectionBackground: '#FFC480',
+    black: '#111827', red: '#DC2626', green: '#15803D', yellow: '#B45309', blue: '#1D4ED8', magenta: '#7E22CE', cyan: '#0E7490', white: '#EBDBB7',
+    brightBlack: '#4B5563', brightRed: '#FE4A60', brightGreen: '#16A34A', brightYellow: '#D97706', brightBlue: '#2563EB', brightMagenta: '#9333EA', brightCyan: '#0891B2', brightWhite: '#FFFDF8',
   },
 };

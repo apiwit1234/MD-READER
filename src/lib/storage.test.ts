@@ -22,7 +22,7 @@ describe('storage', () => {
   it('round-trips state', () => {
     const s = defaultState();
     s.theme = 'dark';
-    s.themeFavorites = ['retro', 'space'];
+    s.themeFavorites = ['cartoon', 'dark'];
     s.openedFolders.push({
       id: 'abc',
       hostPath: 'C:\\x',
@@ -44,8 +44,8 @@ describe('storage', () => {
     expect(loadState()).toEqual(defaultState());
   });
 
-  it('accepts all five themes', () => {
-    for (const theme of ['light', 'dark', 'retro', 'space', 'moneh'] as const) {
+  it('accepts all three themes', () => {
+    for (const theme of ['light', 'dark', 'cartoon'] as const) {
       const s = defaultState();
       s.theme = theme;
       saveState(s);
@@ -53,12 +53,40 @@ describe('storage', () => {
     }
   });
 
-  it('rejects an unknown theme and returns defaults', () => {
+  it('migrates removed themes by base WITHOUT resetting the rest of the state', () => {
+    const folders = [{ id: 'abc', hostPath: 'C:\\x', name: 'x', color: '#2563eb', expanded: true }];
+    for (const [legacy, expected] of [['space', 'dark'], ['retro', 'light'], ['moneh', 'light']] as const) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ theme: legacy, openedFolders: folders, openTabs: [], recentFolders: [], themeFavorites: ['light', 'dark'] }),
+      );
+      const loaded = loadState();
+      expect(loaded.theme).toBe(expected);
+      expect(loaded.openedFolders).toEqual(folders);
+    }
+  });
+
+  it('migrates removed themes inside favorites, resetting to defaults on a collision', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ theme: 'light', openedFolders: [], openTabs: [], recentFolders: [], themeFavorites: ['retro', 'space'] }),
+    );
+    expect(loadState().themeFavorites).toEqual(['light', 'dark']); // retro->light, space->dark
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ theme: 'light', openedFolders: [], openTabs: [], recentFolders: [], themeFavorites: ['retro', 'moneh'] }),
+    );
+    // both map to light -> collision -> default pair
+    expect(loadState().themeFavorites).toEqual(['light', 'dark']);
+  });
+
+  it('falls back to light theme on a completely unknown value (keeping state)', () => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ theme: 'neon', openedFolders: [], openTabs: [], recentFolders: [], themeFavorites: ['light', 'dark'] }),
     );
-    expect(loadState()).toEqual(defaultState());
+    expect(loadState().theme).toBe('light');
   });
 
   it('fills missing themeFavorites with the default pair (v2 migration)', () => {
