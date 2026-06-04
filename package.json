@@ -134,7 +134,9 @@
     "nsis": {
       "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": false,
+      "include": "electron/installer.nsh"
     },
     "asar": true
   }
