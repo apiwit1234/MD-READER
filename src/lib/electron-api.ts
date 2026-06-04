@@ -84,6 +84,10 @@ type MdReader = {
     get: () => Promise<AppSettings>;
     set: (patch: Partial<AppSettings>) => Promise<AppSettings>;
   };
+  update: {
+    check: () => Promise<{ ok: boolean; version?: string | null; error?: string }>;
+    onUpdateReady: (cb: (version: string) => void) => () => void;
+  };
   fileUtil: {
     pathForFile: (file: File) => string | null;
   };

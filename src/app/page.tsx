@@ -324,6 +324,17 @@ export default function Page() {
     };
   }, []);
 
+  // Show a non-blocking notice when an update has been downloaded; it installs
+  // automatically the next time the app is closed.
+  useEffect(() => {
+    if (!hasApi()) return;
+    const off = getApi().update.onUpdateReady((version) => {
+      showToast(`Update v${version} downloaded — restart MD Reader to apply`);
+    });
+    return () => { off(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Warn before closing the window with unsaved editor buffers.
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {

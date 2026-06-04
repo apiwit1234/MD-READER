@@ -57,8 +57,16 @@ describe('SettingsModal', () => {
     expect(screen.getByText(/not set/i)).toBeInTheDocument();
   });
 
+  it('renders the Updates section with the automatic-updates toggle', () => {
+    setup();
+    expect(screen.getByText(/automatic updates/i)).toBeInTheDocument();
+    // No electron bridge in tests -> controls are disabled.
+    expect(screen.getByRole('checkbox', { name: /automatic updates/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /check for updates/i })).toBeDisabled();
+  });
+
   it('does not render when closed', () => {
     setup({ open: false });
-    expect(screen.queryByText(/appearance/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/settings/i)).not.toBeInTheDocument();
   });
 });

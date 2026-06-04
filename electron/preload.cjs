@@ -79,6 +79,14 @@ contextBridge.exposeInMainWorld('mdreader', {
     get: () => ipcRenderer.invoke('settings:get'),
     set: (patch) => ipcRenderer.invoke('settings:set', patch),
   },
+  update: {
+    check: () => ipcRenderer.invoke('update:check'),
+    onUpdateReady: (cb) => {
+      const listener = (_e, version) => cb(version);
+      ipcRenderer.on('app:update-ready', listener);
+      return () => ipcRenderer.removeListener('app:update-ready', listener);
+    },
+  },
   fileUtil: {
     // Returns the absolute host path for a File obtained from drag-and-drop, or null on failure.
     pathForFile: (file) => {

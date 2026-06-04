@@ -62,6 +62,46 @@ ipcMain.handle('settings:set', (_e, patch) =>
   getSettingsStore().write(patch && typeof patch === 'object' ? patch : {}),
 );
 
+// --- Auto-update (electron-updater + GitHub Releases) ---
+let updaterRef = null;
+
+function initAutoUpdate() {
+  if (!app.isPackaged) return; // dev builds never check
+  let autoUpdater;
+  try {
+    ({ autoUpdater } = require('electron-updater'));
+  } catch (err) {
+    appendLog('autoUpdate', `electron-updater not loadable: ${(err && err.message) || err}`);
+    return;
+  }
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true; // installs silently on next quit
+  autoUpdater.on('update-downloaded', (info) => {
+    for (const w of BrowserWindow.getAllWindows()) {
+      try { w.webContents.send('app:update-ready', info.version); } catch {}
+    }
+  });
+  autoUpdater.on('error', (err) => appendLog('autoUpdate', String((err && err.stack) || err)));
+  updaterRef = autoUpdater;
+  if (getSettingsStore().read().autoUpdate) {
+    setTimeout(() => {
+      updaterRef.checkForUpdates().catch((err) => appendLog('autoUpdate', String(err)));
+    }, 10_000);
+  }
+}
+
+ipcMain.handle('update:check', async () => {
+  if (!app.isPackaged) return { ok: false, error: 'dev build — updates only work in the installed app' };
+  if (!updaterRef) return { ok: false, error: 'updater unavailable' };
+  try {
+    const r = await updaterRef.checkForUpdates();
+    const remote = r && r.updateInfo ? r.updateInfo.version : null;
+    return { ok: true, version: remote !== app.getVersion() ? remote : null };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
+});
+
 const devUrl = process.env.ELECTRON_DEV_URL;
 
 // Serve the Next.js static export on a FIXED port so the origin is stable across launches.
@@ -607,6 +647,7 @@ if (!gotLock) {
 app.whenReady().then(async () => {
   pendingFiles.push(...extractFilePathsFromArgv(process.argv));
   mainWindow = await createWindow();
+  initAutoUpdate();
 });
 
 app.on('window-all-closed', () => {
