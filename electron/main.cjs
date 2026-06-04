@@ -7,10 +7,25 @@ const http = require('node:http');
 const { createReadStream, existsSync, statSync, appendFileSync, watch: fsWatch } = require('node:fs');
 const { scanFiles } = require('./search-core.cjs');
 const git = require('./git.cjs');
+const { createSettingsStore } = require('./settings.cjs');
+const { createErrorFileWriter } = require('./log-files.cjs');
 
-// --- Error logging: append to a file the user can copy when reporting issues. ---
+// --- Error logging ---
+// Everything goes to userData/logs: a running mdreader.log PLUS one file per
+// error, so the user can open the folder and send the relevant files when
+// reporting a bug.
+function logsDirPath() {
+  const dir = path.join(app.getPath('userData'), 'logs');
+  try { require('node:fs').mkdirSync(dir, { recursive: true }); } catch {}
+  return dir;
+}
 function logFilePath() {
-  return path.join(app.getPath('userData'), 'mdreader.log');
+  return path.join(logsDirPath(), 'mdreader.log');
+}
+let errorFileWriter = null;
+function writeErrorFile(scope, message) {
+  if (!errorFileWriter) errorFileWriter = createErrorFileWriter(logsDirPath());
+  errorFileWriter(scope, message);
 }
 function appendLog(scope, message) {
   try {
@@ -18,6 +33,7 @@ function appendLog(scope, message) {
   } catch {
     // logging must never throw
   }
+  if (scope !== 'info') writeErrorFile(scope, message);
 }
 process.on('uncaughtException', (err) => appendLog('uncaughtException', (err && err.stack) || String(err)));
 process.on('unhandledRejection', (reason) => appendLog('unhandledRejection', (reason && reason.stack) || String(reason)));
@@ -44,10 +60,63 @@ ipcMain.handle('clipboard:saveImage', () => {
     return null;
   }
 });
+// Opens the logs FOLDER (running log + one file per error) so the user can
+// pick files to send when reporting a bug.
 ipcMain.handle('app:openLog', async () => {
-  const p = logFilePath();
-  if (!existsSync(p)) appendLog('info', 'log opened (no prior errors)');
-  return shell.openPath(p);
+  const dir = logsDirPath();
+  if (!existsSync(logFilePath())) appendLog('info', 'log opened (no prior errors)');
+  return shell.openPath(dir);
+});
+
+// --- App settings (userData/settings.json) ---
+let settingsStore = null;
+function getSettingsStore() {
+  if (!settingsStore) settingsStore = createSettingsStore(app.getPath('userData'));
+  return settingsStore;
+}
+ipcMain.handle('settings:get', () => getSettingsStore().read());
+ipcMain.handle('settings:set', (_e, patch) =>
+  getSettingsStore().write(patch && typeof patch === 'object' ? patch : {}),
+);
+
+// --- Auto-update (electron-updater + GitHub Releases) ---
+let updaterRef = null;
+
+function initAutoUpdate() {
+  if (!app.isPackaged) return; // dev builds never check
+  let autoUpdater;
+  try {
+    ({ autoUpdater } = require('electron-updater'));
+  } catch (err) {
+    appendLog('autoUpdate', `electron-updater not loadable: ${(err && err.message) || err}`);
+    return;
+  }
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true; // installs silently on next quit
+  autoUpdater.on('update-downloaded', (info) => {
+    for (const w of BrowserWindow.getAllWindows()) {
+      try { w.webContents.send('app:update-ready', info.version); } catch {}
+    }
+  });
+  autoUpdater.on('error', (err) => appendLog('autoUpdate', String((err && err.stack) || err)));
+  updaterRef = autoUpdater;
+  if (getSettingsStore().read().autoUpdate) {
+    setTimeout(() => {
+      updaterRef.checkForUpdates().catch((err) => appendLog('autoUpdate', String(err)));
+    }, 10_000);
+  }
+}
+
+ipcMain.handle('update:check', async () => {
+  if (!app.isPackaged) return { ok: false, error: 'dev build — updates only work in the installed app' };
+  if (!updaterRef) return { ok: false, error: 'updater unavailable' };
+  try {
+    const r = await updaterRef.checkForUpdates();
+    const remote = r && r.updateInfo ? r.updateInfo.version : null;
+    return { ok: true, version: remote !== app.getVersion() ? remote : null };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
 });
 
 const devUrl = process.env.ELECTRON_DEV_URL;
@@ -595,6 +664,7 @@ if (!gotLock) {
 app.whenReady().then(async () => {
   pendingFiles.push(...extractFilePathsFromArgv(process.argv));
   mainWindow = await createWindow();
+  initAutoUpdate();
 });
 
 app.on('window-all-closed', () => {

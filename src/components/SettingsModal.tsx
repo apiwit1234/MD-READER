@@ -1,7 +1,8 @@
 'use client';
+import { useEffect, useState } from 'react';
 import type { Theme } from '@/types';
 import { THEMES } from '@/lib/themes';
-import { getApi, hasApi } from '@/lib/electron-api';
+import { getApi, hasApi, type AppSettings } from '@/lib/electron-api';
 
 type Props = {
   open: boolean;
@@ -13,6 +14,14 @@ type Props = {
 };
 
 export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, onSetFavorites }: Props) {
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [checkResult, setCheckResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open && hasApi()) void getApi().settings.get().then(setSettings);
+    if (!open) setCheckResult(null);
+  }, [open]);
+
   if (!open) return null;
 
   function setFav(slot: 0 | 1, value: Theme) {
@@ -34,7 +43,7 @@ export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-base font-semibold">Appearance</h3>
+          <h3 className="text-base font-semibold">Settings</h3>
           <button
             type="button"
             onClick={onClose}
@@ -99,16 +108,50 @@ export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, 
           ))}
         </div>
 
+        <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Updates</div>
+        <div className="rounded-theme border border-border p-2.5 text-sm">
+          <label className="flex items-center justify-between gap-2">
+            <span>Automatic updates</span>
+            <input
+              type="checkbox"
+              aria-label="Automatic updates"
+              checked={settings?.autoUpdate ?? true}
+              disabled={!hasApi() || !settings}
+              onChange={(e) => { void getApi().settings.set({ autoUpdate: e.target.checked }).then(setSettings); }}
+            />
+          </label>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <span className="min-w-0 truncate text-xs text-muted">
+              {checkResult ?? 'Updates download in the background and install when you restart.'}
+            </span>
+            <button
+              type="button"
+              disabled={!hasApi()}
+              onClick={() => {
+                setCheckResult('Checking…');
+                void getApi().update.check().then((r) => {
+                  if (!r.ok) setCheckResult(r.error ?? 'Check failed');
+                  else if (r.version) setCheckResult(`Update v${r.version} found — downloading in background`);
+                  else setCheckResult('You are up to date');
+                });
+              }}
+              className="shrink-0 rounded-theme border border-border px-2 py-1 text-xs text-fg hover:bg-surface-2 disabled:opacity-40"
+            >
+              Check for updates
+            </button>
+          </div>
+        </div>
+
         <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Diagnostics</div>
         <div className="flex items-center justify-between rounded-theme border border-border p-2.5 text-sm">
-          <span className="text-muted">Error log (attach this when reporting a bug)</span>
+          <span className="text-muted">Error logs — one file per error; send them when reporting a bug</span>
           <button
             type="button"
             disabled={!hasApi()}
             onClick={() => { if (hasApi()) void getApi().app.openLog(); }}
-            className="rounded-theme border border-border px-2 py-1 text-xs text-fg hover:bg-surface-2 disabled:opacity-40"
+            className="shrink-0 rounded-theme border border-border px-2 py-1 text-xs text-fg hover:bg-surface-2 disabled:opacity-40"
           >
-            Open error log
+            Open logs folder
           </button>
         </div>
       </div>

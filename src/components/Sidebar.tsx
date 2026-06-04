@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+import { PanelGroup, Panel, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
 import type { OpenedFolder } from '@/types';
 import { FolderSection } from './FolderSection';
 import { SidebarFilter } from './SidebarFilter';
@@ -19,6 +19,8 @@ type Props = {
   activeFile: { folderId: string; relativePath: string } | null;
   markdownOnly?: boolean;
   gitPanel?: ReactNode;
+  /** Drag-collapse/expand of the internal git split (so the Git toggle stays in sync). */
+  onGitVisibilityChange?: (visible: boolean) => void;
   onPickFile: (folderId: string, relativePath: string) => void;
   onCloseFolder: (folderId: string) => void;
   onOpenFolderClick: () => void;
@@ -32,6 +34,7 @@ export function Sidebar({
   activeFile,
   markdownOnly,
   gitPanel,
+  onGitVisibilityChange,
   onPickFile,
   onCloseFolder,
   onOpenFolderClick,
@@ -52,6 +55,26 @@ export function Sidebar({
   }, [folders.length]);
   const [progress, setProgress] = useState<DropProgress | null>(null);
   const [flashing, setFlashing] = useState<{ folderId: string; relativePath: string } | null>(null);
+
+  // Git split: when it (re)mounts, the persisted layout may hold a drag-collapsed
+  // ~0 size — force it open at the default. The ready flag swallows the collapse
+  // events the layout restore fires during mount, so only real user drags reach
+  // onGitVisibilityChange.
+  const gitPanelRef = useRef<ImperativePanelHandle | null>(null);
+  const gitReadyRef = useRef(false);
+  const hasGitPanel = Boolean(gitPanel);
+  useEffect(() => {
+    if (!hasGitPanel) {
+      gitReadyRef.current = false;
+      return;
+    }
+    const p = gitPanelRef.current;
+    if (p) {
+      p.expand();
+      if (p.getSize() < 10) p.resize(30);
+    }
+    gitReadyRef.current = true;
+  }, [hasGitPanel]);
 
   useEffect(() => {
     return subscribeReveal(({ folderId, relativePath }) => {
@@ -175,7 +198,16 @@ export function Sidebar({
         {gitPanel && (
           <>
             <PanelResizeHandle className="h-1.5 shrink-0 cursor-row-resize bg-border transition-colors hover:bg-accent" />
-            <Panel defaultSize={30} minSize={10} collapsible collapsedSize={0} className="overflow-hidden">
+            <Panel
+              ref={gitPanelRef}
+              defaultSize={30}
+              minSize={10}
+              collapsible
+              collapsedSize={0}
+              className="overflow-hidden"
+              onCollapse={() => { if (gitReadyRef.current) onGitVisibilityChange?.(false); }}
+              onExpand={() => { if (gitReadyRef.current) onGitVisibilityChange?.(true); }}
+            >
               {gitPanel}
             </Panel>
           </>

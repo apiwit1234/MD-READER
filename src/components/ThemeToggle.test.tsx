@@ -7,23 +7,23 @@ describe('ThemeToggle', () => {
   it('flips to the other favorite when the active theme is favorite[0]', async () => {
     const user = userEvent.setup();
     const calls: string[] = [];
-    render(<ThemeToggle theme="retro" favorites={['retro', 'space']} onChange={(t) => calls.push(t)} />);
-    await user.click(screen.getByRole('button', { name: /switch to space & stars/i }));
-    expect(calls).toEqual(['space']);
+    render(<ThemeToggle theme="cartoon" favorites={['cartoon', 'dark']} onChange={(t) => calls.push(t)} />);
+    await user.click(screen.getByRole('button', { name: /switch to dark/i }));
+    expect(calls).toEqual(['dark']);
   });
 
   it('flips to favorite[0] when the active theme is favorite[1]', async () => {
     const user = userEvent.setup();
     const calls: string[] = [];
-    render(<ThemeToggle theme="space" favorites={['retro', 'space']} onChange={(t) => calls.push(t)} />);
-    await user.click(screen.getByRole('button', { name: /switch to retro calm/i }));
-    expect(calls).toEqual(['retro']);
+    render(<ThemeToggle theme="dark" favorites={['cartoon', 'dark']} onChange={(t) => calls.push(t)} />);
+    await user.click(screen.getByRole('button', { name: /switch to cartoon/i }));
+    expect(calls).toEqual(['cartoon']);
   });
 
   it('targets favorite[0] when the active theme is in neither favorite slot', async () => {
     const user = userEvent.setup();
     const calls: string[] = [];
-    render(<ThemeToggle theme="moneh" favorites={['light', 'dark']} onChange={(t) => calls.push(t)} />);
+    render(<ThemeToggle theme="cartoon" favorites={['light', 'dark']} onChange={(t) => calls.push(t)} />);
     await user.click(screen.getByRole('button', { name: /switch to light/i }));
     expect(calls).toEqual(['light']);
   });

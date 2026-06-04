@@ -49,4 +49,27 @@ describe('MermaidBlock', () => {
     render(<MermaidBlock source="bad" theme="light" />);
     await waitFor(() => expect(screen.getByText(/diagram failed to render/i)).toBeInTheDocument());
   });
+
+  it('retries with normalized entities when the first render fails', async () => {
+    const mermaid = (await import('mermaid')).default;
+    const renderMock = mermaid.render as ReturnType<typeof vi.fn>;
+    renderMock.mockClear();
+    renderMock.mockRejectedValueOnce(new Error('Parse error'));
+    render(<MermaidBlock source={'sequenceDiagram\n    A-->>B: List&lt;x&gt;'} theme="light" />);
+    await waitFor(() => expect(renderMock).toHaveBeenCalledTimes(2));
+    expect(renderMock.mock.calls[1][1]).toContain('List#60;x#62;');
+    // Retry succeeded (default mock resolves) — no error panel.
+    expect(screen.queryByText(/diagram failed to render/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the ORIGINAL error when both attempts fail', async () => {
+    const mermaid = (await import('mermaid')).default;
+    const renderMock = mermaid.render as ReturnType<typeof vi.fn>;
+    renderMock.mockClear();
+    renderMock.mockRejectedValueOnce(new Error('original parse error'));
+    renderMock.mockRejectedValueOnce(new Error('retry error'));
+    render(<MermaidBlock source="bad &lt;x&gt;" theme="light" />);
+    await waitFor(() => expect(screen.getByText(/diagram failed to render/i)).toBeInTheDocument());
+    expect(screen.getByText(/original parse error/i)).toBeInTheDocument();
+  });
 });

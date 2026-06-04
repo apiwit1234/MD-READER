@@ -1,6 +1,6 @@
 import type { AppState, SearchState, BottomPanelState } from '@/types';
 import { DEFAULT_SEARCH_STATE, DEFAULT_BOTTOM_PANEL_STATE } from '@/types';
-import { isTheme, type Theme } from './themes';
+import { migrateTheme, type Theme } from './themes';
 import { isMode, type Mode } from './mode';
 import { withWindowSuffix } from './window-context';
 
@@ -21,8 +21,12 @@ export function defaultState(): AppState {
 }
 
 function normalizeFavorites(x: unknown): [Theme, Theme] {
-  if (Array.isArray(x) && x.length === 2 && isTheme(x[0]) && isTheme(x[1])) {
-    return [x[0], x[1]];
+  if (Array.isArray(x) && x.length === 2) {
+    const a = migrateTheme(x[0]);
+    const b = migrateTheme(x[1]);
+    // Reject pairs that didn't start as themes at all, and post-migration collisions.
+    const bothWereThemeLike = typeof x[0] === 'string' && typeof x[1] === 'string';
+    if (bothWereThemeLike && a !== b) return [a, b];
   }
   return [...DEFAULT_FAVORITES];
 }
@@ -31,7 +35,7 @@ function isValidState(x: unknown): x is Record<string, unknown> {
   if (!x || typeof x !== 'object') return false;
   const s = x as Record<string, unknown>;
   return (
-    isTheme(s.theme) &&
+    typeof s.theme === 'string' &&
     Array.isArray(s.openedFolders) &&
     Array.isArray(s.openTabs) &&
     Array.isArray(s.recentFolders)
@@ -46,7 +50,7 @@ export function loadState(): AppState {
     const parsed = JSON.parse(raw);
     if (!isValidState(parsed)) return defaultState();
     return {
-      theme: parsed.theme as Theme,
+      theme: migrateTheme(parsed.theme),
       themeFavorites: normalizeFavorites(parsed.themeFavorites),
       openedFolders: parsed.openedFolders as AppState['openedFolders'],
       openTabs: parsed.openTabs as AppState['openTabs'],

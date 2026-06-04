@@ -20,6 +20,7 @@ import { BottomPanel } from '@/components/BottomPanel';
 import { SearchPanel, type OpenResultArg } from '@/components/SearchPanel';
 import { SearchModal } from '@/components/SearchModal';
 import { installGlobalKeyboard } from '@/lib/keyboard';
+import { flagFromPanelEvent } from '@/lib/panel-sync';
 import { revealFile } from '@/lib/sidebar-events';
 import { ModeSwitcher } from '@/components/ModeSwitcher';
 import type { Mode } from '@/lib/mode';
@@ -275,11 +276,15 @@ export default function Page() {
   }, [bottomPanel.open, bottomPanel.activeTab, terminalShownOnce]);
 
   // Programmatically collapse/expand the bottom panel (keeps it mounted).
+  // After a drag-collapse the remembered size can be ~0, so expanding would
+  // reopen an invisible panel — snap back to the default size in that case.
   useEffect(() => {
     const panel = bottomPanelRef.current;
     if (!panel) return;
-    if (bottomPanel.open) panel.expand();
-    else panel.collapse();
+    if (bottomPanel.open) {
+      panel.expand();
+      if (panel.getSize() < 10) panel.resize(35);
+    } else panel.collapse();
   }, [bottomPanel.open]);
 
   // Persist bottom panel state to storage.
@@ -303,6 +308,17 @@ export default function Page() {
       window.removeEventListener('error', onError);
       window.removeEventListener('unhandledrejection', onRejection);
     };
+  }, []);
+
+  // Show a non-blocking notice when an update has been downloaded; it installs
+  // automatically the next time the app is closed.
+  useEffect(() => {
+    if (!hasApi()) return;
+    const off = getApi().update.onUpdateReady((version) => {
+      showToast(`Update v${version} downloaded — restart MD Reader to apply`);
+    });
+    return () => { off(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Warn before closing the window with unsaved editor buffers.
@@ -329,12 +345,15 @@ export default function Page() {
   }, []);
 
   // Same pattern for sidebar — keep Panel in the layout so user-resized width persists across toggles.
+  // Reopen at the default width when the remembered size collapsed to ~0 (drag-close).
   useEffect(() => {
     const panel = sidebarPanelRef.current;
     if (!panel) return;
     // Terminal mode always hides the sidebar, regardless of the user's toggle.
-    if (viewFlags.sidebar && mode !== 'terminal') panel.expand();
-    else panel.collapse();
+    if (viewFlags.sidebar && mode !== 'terminal') {
+      panel.expand();
+      if (panel.getSize() < 15) panel.resize(20);
+    } else panel.collapse();
   }, [viewFlags.sidebar, mode]);
 
   // Full Terminal mode: collapse the top content panel and force the terminal open & maximized.
@@ -972,6 +991,14 @@ export default function Page() {
             collapsible
             collapsedSize={0}
             className="overflow-hidden"
+            onCollapse={() => {
+              const next = flagFromPanelEvent('collapse', modeRef.current);
+              if (next !== null) setViewFlags((f) => (f.sidebar === next ? f : { ...f, sidebar: next }));
+            }}
+            onExpand={() => {
+              const next = flagFromPanelEvent('expand', modeRef.current);
+              if (next !== null) setViewFlags((f) => (f.sidebar === next ? f : { ...f, sidebar: next }));
+            }}
           >
             <Sidebar
               folders={state.openedFolders}
@@ -987,6 +1014,10 @@ export default function Page() {
                   />
                 ) : undefined
               }
+              onGitVisibilityChange={(visible) => {
+                const next = flagFromPanelEvent(visible ? 'expand' : 'collapse', modeRef.current);
+                if (next !== null) setViewFlags((f) => (f.git === next ? f : { ...f, git: next }));
+              }}
               onPickFile={pickFile}
               onCloseFolder={closeFolder}
               onOpenFolderClick={() => setPickerOpen(true)}
@@ -1133,6 +1164,14 @@ export default function Page() {
                 collapsible
                 collapsedSize={0}
                 className="overflow-hidden"
+                onCollapse={() => {
+                  const next = flagFromPanelEvent('collapse', modeRef.current);
+                  if (next !== null) setBottomPanel((p) => (p.open === next ? p : { ...p, open: next }));
+                }}
+                onExpand={() => {
+                  const next = flagFromPanelEvent('expand', modeRef.current);
+                  if (next !== null) setBottomPanel((p) => (p.open === next ? p : { ...p, open: next }));
+                }}
               >
                 <BottomPanel
                   activeTab={bottomPanel.activeTab}
@@ -1142,7 +1181,7 @@ export default function Page() {
                   terminal={
                     terminalShownOnce ? (
                       <TerminalPanel
-                        theme={themeMode(state.theme)}
+                        theme={state.theme}
                         visible={bottomPanel.open && bottomPanel.activeTab === 'terminal'}
                         onReady={(h) => { terminalHandleRef.current = h; }}
                       />

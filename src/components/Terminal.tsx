@@ -6,6 +6,7 @@ import '@xterm/xterm/css/xterm.css';
 import { getApi, hasApi } from '@/lib/electron-api';
 import type { Theme } from '@/types';
 import { terminalThemes } from '@/lib/terminal-themes';
+import { isPlainCtrlC } from '@/lib/terminal-keys';
 
 type Props = {
   sessionId: string;
@@ -69,6 +70,18 @@ export function Terminal({ sessionId, theme, visible, onPtyReady, onActivity, on
         void getApi().term.write(ptyIdRef.current, '\n');
         onInputRef.current?.();
         return false;
+      }
+
+      // Ctrl+C copies the selection when one exists (like VS Code / Windows
+      // Terminal). With no selection it returns true so xterm sends \x03
+      // (SIGINT) to the shell — interrupt behavior is unchanged.
+      if (isPlainCtrlC(e)) {
+        if (term.hasSelection()) {
+          void navigator.clipboard.writeText(term.getSelection());
+          term.clearSelection();
+          return false;
+        }
+        return true;
       }
 
       // Ctrl+V pastes the clipboard exactly once. We preventDefault to stop the
