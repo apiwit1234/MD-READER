@@ -23,6 +23,8 @@ type SpawnWindowOpts = {
   initial?: SpawnWindowInitial;
 };
 
+export type AppSettings = { autoUpdate: boolean };
+
 export type GitResult = { ok: boolean; code: number; stdout: string; stderr: string };
 export type GitDetect = { isRepo: boolean; root: string | null; branch: string | null };
 
@@ -77,6 +79,10 @@ type MdReader = {
   };
   clipboard: {
     saveImage: () => Promise<string | null>;
+  };
+  settings: {
+    get: () => Promise<AppSettings>;
+    set: (patch: Partial<AppSettings>) => Promise<AppSettings>;
   };
   fileUtil: {
     pathForFile: (file: File) => string | null;

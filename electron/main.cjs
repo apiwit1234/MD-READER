@@ -7,6 +7,7 @@ const http = require('node:http');
 const { createReadStream, existsSync, statSync, appendFileSync, watch: fsWatch } = require('node:fs');
 const { scanFiles } = require('./search-core.cjs');
 const git = require('./git.cjs');
+const { createSettingsStore } = require('./settings.cjs');
 
 // --- Error logging: append to a file the user can copy when reporting issues. ---
 function logFilePath() {
@@ -49,6 +50,17 @@ ipcMain.handle('app:openLog', async () => {
   if (!existsSync(p)) appendLog('info', 'log opened (no prior errors)');
   return shell.openPath(p);
 });
+
+// --- App settings (userData/settings.json) ---
+let settingsStore = null;
+function getSettingsStore() {
+  if (!settingsStore) settingsStore = createSettingsStore(app.getPath('userData'));
+  return settingsStore;
+}
+ipcMain.handle('settings:get', () => getSettingsStore().read());
+ipcMain.handle('settings:set', (_e, patch) =>
+  getSettingsStore().write(patch && typeof patch === 'object' ? patch : {}),
+);
 
 const devUrl = process.env.ELECTRON_DEV_URL;
 

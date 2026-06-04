@@ -75,6 +75,10 @@ contextBridge.exposeInMainWorld('mdreader', {
   clipboard: {
     saveImage: () => ipcRenderer.invoke('clipboard:saveImage'),
   },
+  settings: {
+    get: () => ipcRenderer.invoke('settings:get'),
+    set: (patch) => ipcRenderer.invoke('settings:set', patch),
+  },
   fileUtil: {
     // Returns the absolute host path for a File obtained from drag-and-drop, or null on failure.
     pathForFile: (file) => {
