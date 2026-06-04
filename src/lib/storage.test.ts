@@ -111,19 +111,6 @@ describe('storage', () => {
     expect(defaultState().themeFavorites).toEqual(['light', 'dark']);
   });
 
-  it('round-trips defaultFolder and defaults it to null for legacy state', () => {
-    const s = defaultState();
-    expect(s.defaultFolder).toBeNull();
-    s.defaultFolder = 'C:\\notes';
-    saveState(s);
-    expect(loadState().defaultFolder).toBe('C:\\notes');
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ theme: 'light', openedFolders: [], openTabs: [], recentFolders: [], themeFavorites: ['light', 'dark'] }),
-    );
-    expect(loadState().defaultFolder).toBeNull();
-  });
 });
 
 describe('search state storage', () => {

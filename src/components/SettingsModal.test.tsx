@@ -11,8 +11,6 @@ function setup(overrides = {}) {
     favorites: ['light', 'dark'] as ['light', 'dark'],
     onSelectTheme: vi.fn(),
     onSetFavorites: vi.fn(),
-    defaultFolder: null as string | null,
-    onSetDefaultFolder: vi.fn(),
     ...overrides,
   };
   render(<SettingsModal {...props} />);
@@ -42,19 +40,6 @@ describe('SettingsModal', () => {
     const props = setup({ favorites: ['light', 'dark'] });
     await user.selectOptions(screen.getByLabelText(/favorite 1/i), 'dark');
     expect(props.onSetFavorites).toHaveBeenCalledWith(['dark', 'light']);
-  });
-
-  it('shows the default folder and clears it', async () => {
-    const user = userEvent.setup();
-    const props = setup({ defaultFolder: 'C:\\notes' });
-    expect(screen.getByText('C:\\notes')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /clear default folder/i }));
-    expect(props.onSetDefaultFolder).toHaveBeenCalledWith(null);
-  });
-
-  it('shows Not set when no default folder is configured', () => {
-    setup();
-    expect(screen.getByText(/not set/i)).toBeInTheDocument();
   });
 
   it('renders the Updates section with the automatic-updates toggle', () => {
