@@ -20,12 +20,25 @@ function localNameOf(remoteRef: string): string {
 export function BranchMenu({ branches, ahead, behind, onCheckout, onCreate, onMerge }: Props) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'local' | 'remote'>('local');
+  const [query, setQuery] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
   const current = branches?.current ?? '(detached)';
 
   const local = branches?.local ?? [];
   const remote = (branches?.remote ?? []).filter((b) => !b.endsWith('/HEAD'));
 
-  function close() { setOpen(false); }
+  const q = query.trim().toLowerCase();
+  const filteredLocal = q ? local.filter((b) => b.toLowerCase().includes(q)) : local;
+  const filteredRemote = q ? remote.filter((b) => b.toLowerCase().includes(q)) : remote;
+
+  function close() { setOpen(false); setQuery(''); setCreating(false); setNewName(''); }
+
+  function submitCreate() {
+    const name = newName.trim();
+    if (name) onCreate(name);
+    close();
+  }
 
   return (
     <div className="relative">
@@ -44,9 +57,21 @@ export function BranchMenu({ branches, ahead, behind, onCheckout, onCreate, onMe
             <TabBtn active={tab === 'remote'} onClick={() => setTab('remote')} label={`Remote (${remote.length})`} />
           </div>
 
+          <div className="border-b border-border p-1">
+            <input
+              type="text"
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') close(); }}
+              placeholder="Search branches…"
+              className="w-full rounded border border-border bg-bg px-2 py-1 text-xs text-fg outline-none placeholder:text-muted focus:border-accent"
+            />
+          </div>
+
           <div className="overflow-y-auto py-1">
             {tab === 'local' && (
-              local.length === 0 ? <Empty /> : local.map((b) => {
+              filteredLocal.length === 0 ? <Empty /> : filteredLocal.map((b) => {
                 const isCurrent = b === branches.current;
                 return (
                   <div key={b} className="group flex items-center gap-1 px-2 py-1 hover:bg-surface-2">
@@ -73,7 +98,7 @@ export function BranchMenu({ branches, ahead, behind, onCheckout, onCreate, onMe
               })
             )}
             {tab === 'remote' && (
-              remote.length === 0 ? <Empty /> : remote.map((b) => (
+              filteredRemote.length === 0 ? <Empty /> : filteredRemote.map((b) => (
                 <button
                   key={b}
                   type="button"
@@ -87,13 +112,38 @@ export function BranchMenu({ branches, ahead, behind, onCheckout, onCreate, onMe
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => { const n = window.prompt('New branch name'); if (n && n.trim()) onCreate(n.trim()); close(); }}
-            className="border-t border-border px-2 py-1.5 text-left text-accent hover:bg-surface-2"
-          >
-            + Create branch…
-          </button>
+          {creating ? (
+            <div className="flex items-center gap-1 border-t border-border p-1">
+              <input
+                type="text"
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitCreate();
+                  else if (e.key === 'Escape') { setCreating(false); setNewName(''); }
+                }}
+                placeholder="New branch name"
+                className="flex-1 rounded border border-border bg-bg px-2 py-1 text-xs text-fg outline-none placeholder:text-muted focus:border-accent"
+              />
+              <button
+                type="button"
+                disabled={!newName.trim()}
+                onClick={submitCreate}
+                className="shrink-0 rounded bg-accent px-2 py-1 text-xs text-accent-fg disabled:opacity-40"
+              >
+                Create
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="border-t border-border px-2 py-1.5 text-left text-accent hover:bg-surface-2"
+            >
+              + Create branch…
+            </button>
+          )}
         </div>
       )}
     </div>

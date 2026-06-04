@@ -62,6 +62,15 @@ export function Terminal({ sessionId, theme, visible, onPtyReady, onActivity, on
         if (seq) { void getApi().term.write(ptyIdRef.current, seq); onInputRef.current?.(); return false; }
       }
 
+      // Ctrl+Enter inserts a newline (LF) instead of submitting. Plain Enter
+      // still sends CR (\r) to run the command; this lets you add a line inside
+      // a TUI prompt (e.g. Claude Code) without submitting it.
+      if (e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.key === 'Enter' && ptyIdRef.current != null) {
+        void getApi().term.write(ptyIdRef.current, '\n');
+        onInputRef.current?.();
+        return false;
+      }
+
       // Ctrl+V pastes the clipboard exactly once. We preventDefault to stop the
       // browser's own paste event (which would double-paste), then paste manually:
       // an image in the clipboard is saved to a temp file and its path pasted (for
