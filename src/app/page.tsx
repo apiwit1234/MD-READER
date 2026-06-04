@@ -294,11 +294,15 @@ export default function Page() {
   }, [bottomPanel.open, bottomPanel.activeTab, terminalShownOnce]);
 
   // Programmatically collapse/expand the bottom panel (keeps it mounted).
+  // After a drag-collapse the remembered size can be ~0, so expanding would
+  // reopen an invisible panel — snap back to the default size in that case.
   useEffect(() => {
     const panel = bottomPanelRef.current;
     if (!panel) return;
-    if (bottomPanel.open) panel.expand();
-    else panel.collapse();
+    if (bottomPanel.open) {
+      panel.expand();
+      if (panel.getSize() < 10) panel.resize(35);
+    } else panel.collapse();
   }, [bottomPanel.open]);
 
   // Persist bottom panel state to storage.
@@ -359,12 +363,15 @@ export default function Page() {
   }, []);
 
   // Same pattern for sidebar — keep Panel in the layout so user-resized width persists across toggles.
+  // Reopen at the default width when the remembered size collapsed to ~0 (drag-close).
   useEffect(() => {
     const panel = sidebarPanelRef.current;
     if (!panel) return;
     // Terminal mode always hides the sidebar, regardless of the user's toggle.
-    if (viewFlags.sidebar && mode !== 'terminal') panel.expand();
-    else panel.collapse();
+    if (viewFlags.sidebar && mode !== 'terminal') {
+      panel.expand();
+      if (panel.getSize() < 15) panel.resize(20);
+    } else panel.collapse();
   }, [viewFlags.sidebar, mode]);
 
   // Full Terminal mode: collapse the top content panel and force the terminal open & maximized.
