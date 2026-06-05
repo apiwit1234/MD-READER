@@ -1093,6 +1093,15 @@ export default function Page() {
     setTimeout(() => setToast(null), durationMs);
   }
 
+  function resetDefaults() {
+    if (!hasApi()) return;
+    void getApi().settings.reset().then((s) => {
+      setAppSettings(s);
+      setState((st) => ({ ...st, theme: 'light', themeFavorites: ['light', 'dark'] }));
+      showToast('Settings reset to defaults');
+    });
+  }
+
   function clearAll() {
     // Workspace content only — theme/favorites/settings survive (clearedState).
     setState((s) => clearedState(s));
@@ -1215,6 +1224,11 @@ export default function Page() {
         favorites={state.themeFavorites}
         onSelectTheme={setTheme}
         onSetFavorites={setFavorites}
+        settings={appSettings}
+        onUpdateSettings={updateSettings}
+        customFonts={customFonts}
+        onCustomFontsChanged={setCustomFonts}
+        onResetDefaults={resetDefaults}
       />
 
       {bridgeMissing && (
