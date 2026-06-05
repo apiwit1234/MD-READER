@@ -1,4 +1,4 @@
-export type MainSettings = { autoUpdate: boolean };
+export type MainSettings = { autoUpdate: boolean; lastRunVersion: string };
 
 export declare const DEFAULTS: MainSettings;
 

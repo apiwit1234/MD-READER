@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('mdreader', {
     logError: (scope, message) => ipcRenderer.invoke('app:logError', { scope, message }),
     openLog: () => ipcRenderer.invoke('app:openLog'),
     logPath: () => ipcRenderer.invoke('app:logPath'),
+    versionInfo: () => ipcRenderer.invoke('app:versionInfo'),
   },
   git: {
     detect: (folderPath) => ipcRenderer.invoke('git:detect', folderPath),
@@ -81,6 +82,7 @@ contextBridge.exposeInMainWorld('mdreader', {
   },
   update: {
     check: () => ipcRenderer.invoke('update:check'),
+    install: () => ipcRenderer.invoke('update:install'),
     onUpdateReady: (cb) => {
       const listener = (_e, version) => cb(version);
       ipcRenderer.on('app:update-ready', listener);

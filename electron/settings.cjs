@@ -4,12 +4,13 @@
 const path = require('node:path');
 const fsSync = require('node:fs');
 
-const DEFAULTS = { autoUpdate: true };
+const DEFAULTS = { autoUpdate: true, lastRunVersion: '' };
 
 function normalizeSettings(x) {
   const out = { ...DEFAULTS };
   if (x && typeof x === 'object') {
     if (typeof x.autoUpdate === 'boolean') out.autoUpdate = x.autoUpdate;
+    if (typeof x.lastRunVersion === 'string') out.lastRunVersion = x.lastRunVersion;
   }
   return out;
 }

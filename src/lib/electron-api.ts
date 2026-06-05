@@ -56,6 +56,7 @@ type MdReader = {
     logError: (scope: string, message: string) => Promise<string>;
     openLog: () => Promise<string>;
     logPath: () => Promise<string>;
+    versionInfo: () => Promise<{ current: string; updatedFrom: string | null }>;
   };
   git: {
     detect: (folderPath: string) => Promise<GitDetect>;
@@ -86,6 +87,7 @@ type MdReader = {
   };
   update: {
     check: () => Promise<{ ok: boolean; version?: string | null; error?: string }>;
+    install: () => Promise<boolean>;
     onUpdateReady: (cb: (version: string) => void) => () => void;
   };
   fileUtil: {

@@ -36,9 +36,29 @@ Var DesktopShortcutState
   FunctionEnd
 !macroend
 
+; The user's checkbox choice is recorded here so silent UPDATE installs (which
+; skip the page) can honor it. perMachine:false -> SHELL_CONTEXT is HKCU.
+!define MDR_REG_KEY "Software\io.local.mdreader"
+
 !macro customInstall
-  ${If} $DesktopShortcutState == ${BST_CHECKED}
-    CreateShortCut "$DESKTOP\${SHORTCUT_NAME}.lnk" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
+  ${If} ${isUpdated}
+    ; Silent auto-update: the checkbox page never ran. Recreate the desktop
+    ; shortcut unless the user opted out at install time. A missing value
+    ; (updates from <=1.0.3, whose uninstaller wrongly deleted the shortcut
+    ; during updates) defaults to recreate — this heals that transition.
+    ReadRegStr $R9 SHELL_CONTEXT "${MDR_REG_KEY}" "DesktopShortcut"
+    ${If} $R9 != "0"
+      CreateShortCut "$DESKTOP\${SHORTCUT_NAME}.lnk" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
+      System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
+    ${EndIf}
+  ${Else}
+    ${If} $DesktopShortcutState == ${BST_CHECKED}
+      CreateShortCut "$DESKTOP\${SHORTCUT_NAME}.lnk" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
+      WriteRegStr SHELL_CONTEXT "${MDR_REG_KEY}" "DesktopShortcut" "1"
+    ${Else}
+      Delete "$DESKTOP\${SHORTCUT_NAME}.lnk"
+      WriteRegStr SHELL_CONTEXT "${MDR_REG_KEY}" "DesktopShortcut" "0"
+    ${EndIf}
     System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
   ${EndIf}
 !macroend
@@ -46,5 +66,11 @@ Var DesktopShortcutState
 !endif
 
 !macro customUnInstall
-  Delete "$DESKTOP\${SHORTCUT_NAME}.lnk"
+  ; Updates run this uninstaller with --updated (and --keep-shortcuts); the
+  ; desktop shortcut must only be removed on a REAL uninstall. This guard was
+  ; missing in <=1.0.3 and ate the shortcut on every auto-update.
+  ${ifNot} ${isUpdated}
+    Delete "$DESKTOP\${SHORTCUT_NAME}.lnk"
+    DeleteRegKey SHELL_CONTEXT "Software\io.local.mdreader"
+  ${endIf}
 !macroend
