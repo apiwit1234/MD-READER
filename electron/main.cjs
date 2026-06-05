@@ -9,6 +9,9 @@ const { scanFiles } = require('./search-core.cjs');
 const git = require('./git.cjs');
 const { createSettingsStore } = require('./settings.cjs');
 const { createErrorFileWriter } = require('./log-files.cjs');
+// NOTE (v1.0.5 rename): userData stays %APPDATA%\md-reader — Electron derives
+// it from package.json "name", which intentionally did NOT change when the
+// product name became "PAX Reader". Settings/localStorage survive the update.
 
 // --- Error logging ---
 // Everything goes to userData/logs: a running mdreader.log PLUS one file per
