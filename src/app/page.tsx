@@ -1202,6 +1202,7 @@ export default function Page() {
               folders={state.openedFolders}
               activeFile={activeFileForSidebar}
               markdownOnly={mode === 'md'}
+              menuAutoHide={appSettings?.contextMenuAutoHide ?? true}
               gitPanel={
                 <GitPanel
                   repos={gitRepos}
@@ -1247,6 +1248,7 @@ export default function Page() {
                   {viewFlags.tabBar && (
                     <TabBar
                       tabs={visibleTabViews}
+                      menuAutoHide={appSettings?.contextMenuAutoHide ?? true}
                       onFocus={(t) => focusTab(t.folderId, t.relativePath)}
                       onClose={(t) => closeTab(t.folderId, t.relativePath)}
                       onCopyPath={copyTabPath}

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useAutoHideMenu } from '@/lib/useAutoHideMenu';
 
 export type TabView = {
   folderId: string;
@@ -26,6 +27,8 @@ type Props = {
   // When the user drags a tab and releases it over the terminal area.
   // Called with the tab's absolute path; consumer types it into the active terminal.
   onDropOnTerminal?: (tab: TabView) => void;
+  /** Settings → Behavior: context menus close shortly after the mouse leaves. */
+  menuAutoHide?: boolean;
 };
 
 const TEAR_OFF_THRESHOLD_PX = 24;
@@ -43,9 +46,12 @@ export function TabBar({
   onTogglePin,
   onTearOff,
   onDropOnTerminal,
+  menuAutoHide,
 }: Props) {
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  const menuHide = useAutoHideMenu(menuAutoHide ?? true, !!menu, () => setMenu(null));
+  const listHide = useAutoHideMenu(menuAutoHide ?? true, listOpen, () => setListOpen(false));
   const [dragGhost, setDragGhost] = useState<{ tab: TabView; x: number; y: number; mode: 'inside' | 'outside' | 'terminal' } | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const activeRef = useRef<HTMLDivElement | null>(null);
@@ -222,7 +228,10 @@ export function TabBar({
             ▾ <span className="ml-1 font-mono">{tabs.length}</span>
           </button>
           {listOpen && (
-            <div className="absolute right-0 top-full z-50 max-h-[min(420px,55vh)] w-[300px] overflow-y-auto rounded-md border border-border bg-surface py-1 shadow-lg">
+            <div
+              {...listHide}
+              className="absolute right-0 top-full z-50 max-h-[min(420px,55vh)] w-[300px] overflow-y-auto rounded-md border border-border bg-surface py-1 shadow-lg"
+            >
               {tabs.map((t) => (
                 <div
                   key={`${t.folderId}::${t.relativePath}`}
@@ -277,6 +286,7 @@ export function TabBar({
 
       {menu && (
         <div
+          {...menuHide}
           className="fixed z-50 min-w-[180px] rounded-md border border-border bg-surface py-1 shadow-lg"
           style={{ left: menu.x, top: menu.y }}
           onClick={(e) => e.stopPropagation()}

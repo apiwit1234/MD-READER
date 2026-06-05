@@ -30,6 +30,8 @@ type Props = {
   onDropFolder: (result: DropResult) => void;
   onCopyFolderPath?: (hostPath: string) => void;
   onDropFolderOnTerminal?: (hostPath: string) => void;
+  /** Settings → Behavior: context menus close shortly after the mouse leaves. */
+  menuAutoHide?: boolean;
 };
 
 export function Sidebar({
@@ -45,6 +47,7 @@ export function Sidebar({
   onDropFolder,
   onCopyFolderPath,
   onDropFolderOnTerminal,
+  menuAutoHide,
 }: Props) {
   const [filter, setFilter] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -211,6 +214,7 @@ export function Sidebar({
               onDropFolderOnTerminal={onDropFolderOnTerminal}
               filter={filter}
               flashRelativePath={flashing?.folderId === f.id ? flashing.relativePath : null}
+              menuAutoHide={menuAutoHide}
             />
           ))}
           {filter && !filteredHasAny && (
