@@ -577,6 +577,9 @@ async function createWindow(opts = {}) {
     y: y ?? restored?.y,
     backgroundColor: '#ffffff',
     autoHideMenuBar: true,
+    // Packaged builds get the icon from the exe (electron-builder embeds
+    // build/icon.png); dev needs it set explicitly to show in the taskbar.
+    icon: app.isPackaged ? undefined : path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
