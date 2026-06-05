@@ -1,4 +1,4 @@
-export type Theme = 'light' | 'dark' | 'cartoon';
+export type Theme = 'light' | 'dark' | 'cartoon-light' | 'cartoon-dark';
 
 export type ThemeMeta = {
   id: Theme;
@@ -8,9 +8,10 @@ export type ThemeMeta = {
 };
 
 export const THEMES: ThemeMeta[] = [
-  { id: 'light',   label: 'Light',   icon: '☀️', swatch: ['#FFFFFF', '#F8FAFC', '#0F172A', '#2563EB'] },
-  { id: 'dark',    label: 'Dark',    icon: '🌙', swatch: ['#0F172A', '#1E293B', '#F1F5F9', '#3B82F6'] },
-  { id: 'cartoon', label: 'Cartoon', icon: '🎨', swatch: ['#FFFDF8', '#FFF4DA', '#111827', '#FFC480'] },
+  { id: 'light',         label: 'Light',         icon: '☀️', swatch: ['#FFFFFF', '#F8FAFC', '#0F172A', '#2563EB'] },
+  { id: 'dark',          label: 'Dark',          icon: '🌙', swatch: ['#0F172A', '#1E293B', '#F1F5F9', '#3B82F6'] },
+  { id: 'cartoon-light', label: 'Cartoon Light', icon: '🎨', swatch: ['#FFFDF8', '#FFF4DA', '#111827', '#FFC480'] },
+  { id: 'cartoon-dark',  label: 'Cartoon Dark',  icon: '🌃', swatch: ['#17161B', '#232128', '#F2EFE9', '#FFC480'] },
 ];
 
 export const THEME_IDS: Theme[] = THEMES.map((t) => t.id);
@@ -23,8 +24,14 @@ export function themeMeta(id: Theme): ThemeMeta {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
 }
 
-// Removed in v1.1 — mapped to the surviving theme with the same light/dark base.
-const LEGACY_THEME_MAP: Record<string, Theme> = { retro: 'light', moneh: 'light', space: 'dark' };
+// Removed/renamed themes — mapped to the surviving theme with the same base.
+// 'cartoon' split into cartoon-light/cartoon-dark in v1.0.5.
+const LEGACY_THEME_MAP: Record<string, Theme> = {
+  retro: 'light',
+  moneh: 'light',
+  space: 'dark',
+  cartoon: 'cartoon-light',
+};
 
 /** Coerce any stored value to a valid Theme, mapping removed themes by base. */
 export function migrateTheme(x: unknown): Theme {
@@ -35,7 +42,7 @@ export function migrateTheme(x: unknown): Theme {
 
 // Light/dark base of each theme. Drives the `.dark` class (prose, highlight.js,
 // mermaid, find-hit) — distinct from the per-theme color tokens (data-theme).
-const DARK_THEMES: ReadonlySet<Theme> = new Set<Theme>(['dark']);
+const DARK_THEMES: ReadonlySet<Theme> = new Set<Theme>(['dark', 'cartoon-dark']);
 
 export function themeMode(id: Theme): 'light' | 'dark' {
   return DARK_THEMES.has(id) ? 'dark' : 'light';

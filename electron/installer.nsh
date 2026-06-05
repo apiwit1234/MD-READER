@@ -22,7 +22,7 @@ Var DesktopShortcutState
   Page custom desktopShortcutPageCreate desktopShortcutPageLeave
 
   Function desktopShortcutPageCreate
-    !insertmacro MUI_HEADER_TEXT "Shortcuts" "Choose how to launch MD Reader"
+    !insertmacro MUI_HEADER_TEXT "Shortcuts" "Choose how to launch PAX Reader"
     nsDialogs::Create 1018
     Pop $0
     ${NSD_CreateCheckbox} 0 20u 100% 12u "Create a desktop shortcut"

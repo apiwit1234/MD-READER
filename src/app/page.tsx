@@ -10,16 +10,20 @@ import { FolderPickerModal } from '@/components/FolderPickerModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsModal } from '@/components/SettingsModal';
 import { themeMode } from '@/lib/themes';
-import { loadState, saveState, defaultState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
-import { pickNextColor } from '@/lib/colors';
-import { getApi, hasApi, type SpawnWindowInitial } from '@/lib/electron-api';
+import { loadState, saveState, defaultState, clearedState, saveSearchState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
+import { pickNextColor, rgbTripletToHex } from '@/lib/colors';
+import { getApi, hasApi, type SpawnWindowInitial, type AppSettings, type CustomFont } from '@/lib/electron-api';
+import { buildFontChain } from '@/lib/fonts';
 import { getWindowContext, withWindowSuffix } from '@/lib/window-context';
 import type { DropResult } from '@/lib/drop';
 import type { AppState, OpenedFolder, Theme, BottomPanelState, SearchResponse } from '@/types';
+import { DEFAULT_SEARCH_STATE, DEFAULT_BOTTOM_PANEL_STATE } from '@/types';
+import type { TerminalPanelHandle } from '@/components/TerminalPanel';
 import { BottomPanel } from '@/components/BottomPanel';
 import { SearchPanel, type OpenResultArg } from '@/components/SearchPanel';
 import { SearchModal } from '@/components/SearchModal';
 import { installGlobalKeyboard } from '@/lib/keyboard';
+import { applyZoomStep } from '@/lib/zoom';
 import { flagFromPanelEvent } from '@/lib/panel-sync';
 import { reloadAction, isUnderRoot, type BufferState } from '@/lib/live-reload';
 import { revealFile } from '@/lib/sidebar-events';
@@ -97,6 +101,125 @@ export default function Page() {
   // Once a user has ever shown the terminal, we keep TerminalPanel mounted so toggling off doesn't kill PTYs.
   const [terminalShownOnce, setTerminalShownOnce] = useState(false);
 
+  // Persisted app settings (userData/settings.json) — loaded once, written
+  // through updateSettings so this state always mirrors the store.
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+  const appSettingsRef = useRef<AppSettings | null>(null);
+  useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
+
+  useEffect(() => {
+    if (!hasApi()) return;
+    void getApi().settings.get().then(setAppSettings);
+  }, []);
+
+  const updateSettings = useCallback((patch: Partial<AppSettings>) => {
+    if (!hasApi()) return;
+    void getApi().settings.set(patch).then(setAppSettings);
+  }, []);
+
+  // UI size — scales chrome via the root font-size (see globals.css).
+  useEffect(() => {
+    const size = appSettings?.uiSize ?? 'medium';
+    const root = document.documentElement;
+    root.classList.toggle('ui-small', size === 'small');
+    root.classList.toggle('ui-large', size === 'large');
+  }, [appSettings]);
+
+  // Content zoom — drives --content-zoom (markdown + code); the terminal
+  // follows via TerminalPanel's contentZoom prop.
+  useEffect(() => {
+    const z = (appSettings?.contentZoom ?? 100) / 100;
+    document.documentElement.style.setProperty('--content-zoom', String(z));
+  }, [appSettings]);
+
+  // Zoom applies instantly (local state) but persists DEBOUNCED — a ctrl+wheel
+  // burst is many 10% steps and each settings.set is an IPC + disk write.
+  const zoomSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (zoomSaveTimer.current) clearTimeout(zoomSaveTimer.current); }, []);
+  const changeZoom = useCallback((direction: 1 | -1) => {
+    const current = appSettingsRef.current?.contentZoom ?? 100;
+    const next = applyZoomStep(current, direction);
+    if (next === current) return;
+    if (appSettingsRef.current) {
+      setAppSettings({ ...appSettingsRef.current, contentZoom: next });
+      if (zoomSaveTimer.current) clearTimeout(zoomSaveTimer.current);
+      zoomSaveTimer.current = setTimeout(() => {
+        zoomSaveTimer.current = null;
+        updateSettings({ contentZoom: next });
+      }, 350);
+    } else {
+      updateSettings({ contentZoom: next });
+    }
+    showToast(`Zoom ${next}%`);
+  }, [updateSettings]);
+
+  const resetZoom = useCallback(() => {
+    if ((appSettingsRef.current?.contentZoom ?? 100) === 100) return;
+    updateSettings({ contentZoom: 100 });
+    showToast('Zoom 100%');
+  }, [updateSettings]);
+
+  // Custom reading fonts — list from userData/fonts, registered on demand.
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
+  const loadedFontIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!hasApi()) return;
+    void getApi().fonts.list().then(setCustomFonts);
+  }, []);
+
+  // Register referenced custom fonts with the document (FontFace API), once each.
+  useEffect(() => {
+    if (!hasApi() || !appSettings) return;
+    const revertPatch = (): Partial<AppSettings> => (appSettingsRef.current?.fontSplit
+      ? { fontEnglish: 'default', fontThai: 'default' }
+      : { fontSource: 'default' });
+    const referenced = (appSettings.fontSplit
+      ? [appSettings.fontEnglish, appSettings.fontThai]
+      : [appSettings.fontSource]
+    ).filter((id) => id.startsWith('custom-') && !loadedFontIdsRef.current.has(id));
+    for (const id of referenced) {
+      loadedFontIdsRef.current.add(id);
+      void getApi().fonts.data(id).then(async (r) => {
+        if (!r.ok || !r.bytes) {
+          loadedFontIdsRef.current.delete(id);
+          showToast('Font could not be loaded — reverting to default');
+          updateSettings(revertPatch());
+          return;
+        }
+        try {
+          const face = new FontFace(id, r.bytes as unknown as ArrayBuffer);
+          await face.load();
+          document.fonts.add(face);
+        } catch {
+          loadedFontIdsRef.current.delete(id);
+          showToast('Font could not be loaded — reverting to default');
+          updateSettings(revertPatch());
+        }
+      });
+    }
+  }, [appSettings, customFonts, updateSettings]);
+
+  const readingFontFamily = appSettings ? buildFontChain(appSettings, customFonts) : '';
+
+  // Stable refs so the mount-only listeners below always call the latest logic.
+  const changeZoomRef = useRef(changeZoom);
+  const resetZoomRef = useRef(resetZoom);
+  useEffect(() => { changeZoomRef.current = changeZoom; resetZoomRef.current = resetZoom; }, [changeZoom, resetZoom]);
+
+  // Ctrl+wheel over the reading content or terminal — like Chrome.
+  useEffect(() => {
+    function onWheel(e: WheelEvent) {
+      if (!e.ctrlKey) return;
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('[data-zoom-zone]')) return;
+      e.preventDefault();
+      changeZoomRef.current(e.deltaY < 0 ? 1 : -1);
+    }
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
+  }, []);
+
   const [bottomPanel, setBottomPanel] = useState<BottomPanelState>({ open: false, activeTab: 'terminal' });
   const [mode, setMode] = useState<Mode>('md');
   const [modeSwitching, setModeSwitching] = useState(false);
@@ -112,8 +235,8 @@ export default function Page() {
   const bottomPanelRef = useRef<ImperativePanelHandle>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const topContentPanelRef = useRef<ImperativePanelHandle>(null);
-  // Handle for the TerminalPanel component to type into its active terminal.
-  const terminalHandleRef = useRef<{ typeIntoActive: (text: string) => void } | null>(null);
+  // Handle for the TerminalPanel component (type into / reset terminals).
+  const terminalHandleRef = useRef<TerminalPanelHandle | null>(null);
   const contentStoreRef = useRef<ContentStore>(new ContentStore());
   // Bumped per path on external refresh; remounts CodeEditor (it ignores
   // `value` after mount by design — see CodeEditor.tsx:80).
@@ -371,6 +494,16 @@ export default function Page() {
     root.classList.toggle('dark', themeMode(state.theme) === 'dark');
   }, [state.theme, hydrated]);
 
+  // Keep the OS window background in the theme's surface color (no white
+  // flash on launch; painted behind the frameless window).
+  useEffect(() => {
+    if (!hydrated || !hasApi()) return;
+    const root = document.documentElement;
+    const surface = getComputedStyle(root).getPropertyValue('--c-surface');
+    const hex = rgbTripletToHex(surface);
+    if (hex) void getApi().window.setTitleBarColors(hex);
+  }, [state.theme, hydrated]);
+
   useEffect(() => {
     if ((bottomPanel.open && bottomPanel.activeTab === 'terminal') && !terminalShownOnce) setTerminalShownOnce(true);
   }, [bottomPanel.open, bottomPanel.activeTab, terminalShownOnce]);
@@ -445,6 +578,8 @@ export default function Page() {
       onOpenGlobalSearch: () => setSearchModalOpen(true),
       onSetMode: (m) => changeMode(m),
       getMode: () => modeRef.current,
+      onZoom: (d) => changeZoomRef.current(d),
+      onZoomReset: () => resetZoomRef.current(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -975,11 +1110,25 @@ export default function Page() {
     setTimeout(() => setToast(null), durationMs);
   }
 
+  function resetDefaults() {
+    if (!hasApi()) return;
+    void getApi().settings.reset().then((s) => {
+      setAppSettings(s);
+      setState((st) => ({ ...st, theme: 'light', themeFavorites: ['light', 'dark'] }));
+      showToast('Settings reset to defaults');
+    });
+  }
+
   function clearAll() {
-    setState({ ...defaultState() });
+    // Workspace content only — theme/favorites/settings survive (clearedState).
+    setState((s) => clearedState(s));
     setVirtualContents({});
+    setLastSearch({ query: '', caseSensitive: false, response: null });
+    saveSearchState({ ...DEFAULT_SEARCH_STATE });
+    setBottomPanel({ ...DEFAULT_BOTTOM_PANEL_STATE });
+    terminalHandleRef.current?.resetAll();
     setConfirmClear(false);
-    showToast('Cleared all folders and tabs');
+    showToast('Cleared folders, tabs, search and terminals');
   }
 
   function toggleView(key: keyof ViewFlags) {
@@ -1045,9 +1194,11 @@ export default function Page() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-2">
+      <header className="titlebar-drag flex h-10 shrink-0 items-center justify-between border-b border-border bg-surface px-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-sm font-semibold tracking-wide text-fg">MD Reader</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.png" alt="" aria-hidden className="h-5 w-5 shrink-0" />
+          <h1 className="text-sm font-semibold tracking-wide text-fg">PAX Reader</h1>
           <ModeSwitcher mode={mode} onChange={changeMode} />
         </div>
         <div className="flex items-center gap-4">
@@ -1079,6 +1230,7 @@ export default function Page() {
           >
             ⚙️
           </button>
+          {hasApi() && <WindowControls />}
         </div>
       </header>
 
@@ -1089,6 +1241,11 @@ export default function Page() {
         favorites={state.themeFavorites}
         onSelectTheme={setTheme}
         onSetFavorites={setFavorites}
+        settings={appSettings}
+        onUpdateSettings={updateSettings}
+        customFonts={customFonts}
+        onCustomFontsChanged={setCustomFonts}
+        onResetDefaults={resetDefaults}
       />
 
       {bridgeMissing && (
@@ -1120,16 +1277,17 @@ export default function Page() {
               folders={state.openedFolders}
               activeFile={activeFileForSidebar}
               markdownOnly={mode === 'md'}
+              menuAutoHide={appSettings?.contextMenuAutoHide ?? true}
               gitPanel={
-                viewFlags.git ? (
-                  <GitPanel
-                    repos={gitRepos}
-                    activeRoot={activeRepoRoot}
-                    onSelectRepo={setActiveRepoRoot}
-                    onOpenDiff={openDiffTab}
-                  />
-                ) : undefined
+                <GitPanel
+                  repos={gitRepos}
+                  activeRoot={activeRepoRoot}
+                  onSelectRepo={setActiveRepoRoot}
+                  onOpenDiff={openDiffTab}
+                  active={viewFlags.git}
+                />
               }
+              gitVisible={viewFlags.git}
               onGitVisibilityChange={(visible) => {
                 const next = flagFromPanelEvent(visible ? 'expand' : 'collapse', modeRef.current);
                 if (next !== null) setViewFlags((f) => (f.git === next ? f : { ...f, git: next }));
@@ -1154,7 +1312,7 @@ export default function Page() {
           <Panel defaultSize={80} minSize={30} className="overflow-hidden">
             <PanelGroup direction="vertical" autoSaveId={`mdreader.layout.v.v3.${getWindowContext().windowId}`}>
               <Panel ref={topContentPanelRef} defaultSize={65} minSize={25} collapsible collapsedSize={0} className="overflow-hidden">
-                <main className="relative flex h-full min-w-0 flex-col bg-bg">
+                <main className="relative flex h-full min-w-0 flex-col bg-bg" data-zoom-zone>
                   {modeSwitching && (
                     <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-bg/60 backdrop-blur-[1px]">
                       <svg className="h-6 w-6 animate-spin text-accent" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -1166,6 +1324,7 @@ export default function Page() {
                   {viewFlags.tabBar && (
                     <TabBar
                       tabs={visibleTabViews}
+                      menuAutoHide={appSettings?.contextMenuAutoHide ?? true}
                       onFocus={(t) => focusTab(t.folderId, t.relativePath)}
                       onClose={(t) => closeTab(t.folderId, t.relativePath)}
                       onCopyPath={copyTabPath}
@@ -1199,6 +1358,7 @@ export default function Page() {
                             findBarOpen={findBarOpenForActive}
                             onFindBarOpenChange={setFindBarOpenForActive}
                             activeHighlight={activeHighlight}
+                            fontFamily={readingFontFamily}
                           />
                         </div>
                         <div className="h-full" hidden={mode !== 'code'}>
@@ -1299,6 +1459,7 @@ export default function Page() {
                       <TerminalPanel
                         theme={state.theme}
                         visible={bottomPanel.open && bottomPanel.activeTab === 'terminal'}
+                        contentZoom={appSettings?.contentZoom ?? 100}
                         onReady={(h) => { terminalHandleRef.current = h; }}
                       />
                     ) : null
@@ -1380,6 +1541,43 @@ export default function Page() {
           {toast}
         </div>
       )}
+    </div>
+  );
+}
+
+/** macOS-style traffic-light window controls for the frameless window.
+ *  Glyphs appear on hover of the group, like macOS. Close stays in the
+ *  top-right corner (Windows muscle memory); colors follow macOS. */
+function WindowControls() {
+  // .window-control / .wc-* let the cartoon themes restyle these to the
+  // neobrutalist house palette (see globals.css).
+  const btn = 'window-control flex h-3.5 w-3.5 items-center justify-center rounded-full text-[0px] font-bold leading-none text-black/60 ring-1 ring-black/15 transition-colors group-hover:text-[0.5625rem]';
+  return (
+    <div className="group titlebar-no-drag ml-1 flex shrink-0 items-center gap-2" aria-label="Window controls">
+      <button
+        type="button"
+        aria-label="Minimize window"
+        onClick={() => { void getApi().window.minimize(); }}
+        className={`${btn} wc-min bg-[#FEBC2E]`}
+      >
+        −
+      </button>
+      <button
+        type="button"
+        aria-label="Maximize or restore window"
+        onClick={() => { void getApi().window.maximizeToggle(); }}
+        className={`${btn} wc-max bg-[#28C840]`}
+      >
+        +
+      </button>
+      <button
+        type="button"
+        aria-label="Close window"
+        onClick={() => { void getApi().window.close(); }}
+        className={`${btn} wc-close bg-[#FF5F57]`}
+      >
+        ✕
+      </button>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'MD Reader',
+  title: 'PAX Reader',
   description: 'Local markdown reader',
 };
 

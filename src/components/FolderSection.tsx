@@ -4,6 +4,7 @@ import type { FsNode, OpenedFolder } from '@/types';
 import { FileTree } from './FileTree';
 import { getApi, hasApi } from '@/lib/electron-api';
 import { filterTree, pruneToMarkdown } from '@/lib/filter';
+import { useAutoHideMenu } from '@/lib/useAutoHideMenu';
 
 type Props = {
   folder: OpenedFolder;
@@ -15,6 +16,8 @@ type Props = {
   filter?: string;
   flashRelativePath?: string | null;
   markdownOnly?: boolean;
+  /** Settings → Behavior: context menus close shortly after the mouse leaves. */
+  menuAutoHide?: boolean;
 };
 
 const DRAG_THRESHOLD_PX = 24;
@@ -41,6 +44,7 @@ export function FolderSection({
   filter,
   flashRelativePath,
   markdownOnly,
+  menuAutoHide,
 }: Props) {
   const [tree, setTree] = useState<FsNode | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,6 +52,7 @@ export function FolderSection({
   const [dragging, setDragging] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const menuHide = useAutoHideMenu(menuAutoHide ?? true, !!menu, () => setMenu(null));
   const sigRef = useRef('');
 
   useEffect(() => {
@@ -192,6 +197,7 @@ export function FolderSection({
       </div>
       {menu && (
         <div
+          {...menuHide}
           className="fixed z-50 min-w-[180px] rounded-md border border-border bg-surface py-1 shadow-lg"
           style={{ left: menu.x, top: menu.y }}
           onClick={(e) => e.stopPropagation()}

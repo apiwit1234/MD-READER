@@ -4,6 +4,13 @@
 
 html, body, #__next { height: 100%; }
 
+/* UI size (Settings → Appearance). Chrome uses rem-based Tailwind sizes, so the
+   root font-size scales every panel, tab and button. Reading content is pinned
+   to px (see MarkdownView/.prose-md) and is NOT affected. */
+html { font-size: 16px; }
+html.ui-small { font-size: 14px; }
+html.ui-large { font-size: 18px; }
+
 /* Default (pre-hydration) mirrors Light. */
 :root,
 [data-theme="light"] {
@@ -32,19 +39,39 @@ html, body, #__next { height: 100%; }
   --radius: 6px;
 }
 
-/* Cartoon — gitingest.com-inspired neo-brutalist (cream, thick ink borders,
-   hard offset shadows). Light-base. */
-[data-theme="cartoon"] {
-  --c-bg: 255 253 248;
-  --c-surface: 255 244 218;
-  --c-surface-2: 235 219 183;
-  --c-fg: 17 24 39;
-  --c-muted: 75 85 99;
-  --c-border: 17 24 39;
-  --c-accent: 255 196 128;
-  --c-accent-fg: 17 24 39;
-  --c-accent-soft: 255 233 201;
-  --radius: 4px;
+/* Cartoon — neobrutalist house style (cream/amber light, charcoal dark;
+   thick ink borders, hard offset shadows). Tokens from the personal
+   html-house-style skill. --nb-shadow/--nb-red drive the chrome rules below. */
+[data-theme="cartoon-light"] {
+  --c-bg: 255 253 248;        /* #FFFDF8 page */
+  --c-surface: 250 250 250;   /* #FAFAFA card */
+  --c-surface-2: 255 244 218; /* #FFF4DA input */
+  --c-fg: 17 24 39;           /* #111827 ink */
+  --c-muted: 75 85 99;        /* #4B5563 */
+  --c-border: 17 24 39;       /* #111827 line */
+  --c-accent: 255 196 128;    /* #FFC480 */
+  --c-accent-fg: 17 24 39;    /* on-accent — dark in BOTH themes */
+  --c-accent-soft: 255 244 218;
+  --radius: 8px;
+  --nb-shadow: 17 24 39;
+  --nb-red: 254 74 96;        /* #FE4A60 */
+  --nb-good: 31 122 77;       /* #1F7A4D */
+}
+
+[data-theme="cartoon-dark"] {
+  --c-bg: 23 22 27;           /* #17161B page */
+  --c-surface: 35 33 40;      /* #232128 card */
+  --c-surface-2: 43 41 50;    /* #2B2932 panel */
+  --c-fg: 242 239 233;        /* #F2EFE9 ink */
+  --c-muted: 163 158 149;     /* #A39E95 */
+  --c-border: 0 0 0;          /* #000000 line */
+  --c-accent: 255 196 128;    /* #FFC480 */
+  --c-accent-fg: 17 24 39;    /* on-accent — dark in BOTH themes */
+  --c-accent-soft: 58 48 31;  /* #3A301F */
+  --radius: 8px;
+  --nb-shadow: 0 0 0;
+  --nb-red: 255 107 122;      /* #FF6B7A */
+  --nb-good: 95 208 138;      /* #5FD08A */
 }
 
 body {
@@ -54,36 +81,92 @@ body {
 /* Neo-brutalist chrome: every control that already draws a border gets thick
    ink + a hard shadow, with the gitingest press-down hover. Borderless icon
    buttons are left alone (they'd look too heavy). */
-[data-theme="cartoon"] button[class*="border"],
-[data-theme="cartoon"] input[type="text"],
-[data-theme="cartoon"] input[type="search"],
-[data-theme="cartoon"] select,
-[data-theme="cartoon"] textarea {
+[data-theme^="cartoon"] button[class*="border"],
+[data-theme^="cartoon"] input[type="text"],
+[data-theme^="cartoon"] input[type="search"],
+[data-theme^="cartoon"] select,
+[data-theme^="cartoon"] textarea {
   border-width: 2px;
-  border-color: rgb(17 24 39);
-  box-shadow: 2px 2px 0 rgb(17 24 39);
+  border-color: rgb(var(--c-border));
+  box-shadow: 2px 2px 0 rgb(var(--nb-shadow));
 }
-[data-theme="cartoon"] button[class*="border"]:hover {
+[data-theme^="cartoon"] button[class*="border"]:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 rgb(17 24 39);
+  box-shadow: 3px 3px 0 rgb(var(--nb-shadow));
 }
-[data-theme="cartoon"] button[class*="border"]:active {
+[data-theme^="cartoon"] button[class*="border"]:active {
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 rgb(17 24 39);
+  box-shadow: 1px 1px 0 rgb(var(--nb-shadow));
 }
 /* Modal / floating cards (all use shadow-xl today) get the big offset shadow. */
-[data-theme="cartoon"] .shadow-xl {
-  border: 3px solid rgb(17 24 39);
-  box-shadow: 6px 6px 0 rgb(17 24 39);
+[data-theme^="cartoon"] .shadow-xl {
+  border: 3px solid rgb(var(--c-border));
+  box-shadow: 6px 6px 0 rgb(var(--nb-shadow));
 }
-/* The pale orange accent works as a BACKGROUND (with ink text) but is
-   unreadable as text/border color on cream. Remap those usages to the
-   gitingest coral + ink. */
-[data-theme="cartoon"] .text-accent {
-  color: rgb(254 74 96);
+/* The pale amber accent works as a BACKGROUND (with ink text) but is
+   unreadable as text/border color on the page. Remap those usages to the
+   house-style red + ink. */
+[data-theme^="cartoon"] .text-accent {
+  color: rgb(var(--nb-red));
 }
-[data-theme="cartoon"] .border-accent {
-  border-color: rgb(17 24 39);
+[data-theme^="cartoon"] .border-accent {
+  border-color: rgb(var(--c-border));
+}
+/* House-style default reading font for the cartoon themes: Latin → Inter,
+   Thai falls through to Noto Sans Thai. A font picked in Settings → Fonts
+   overrides this via the article's inline style. */
+[data-theme^="cartoon"] .prose-md {
+  font-family: 'Inter', 'Noto Sans Thai', system-ui, sans-serif;
+}
+/* Window controls take the neobrutalist treatment in cartoon themes:
+   house palette (amber/green/red), ink border, hard offset shadow,
+   press-down hover — matching every other cartoon button. */
+[data-theme^="cartoon"] .window-control {
+  border: 2px solid rgb(var(--c-border));
+  box-shadow: 1px 1px 0 rgb(var(--nb-shadow));
+  color: rgb(17 24 39 / 0.75);
+  transition: transform 0.1s, box-shadow 0.1s, font-size 0.1s;
+}
+[data-theme^="cartoon"] .window-control:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0 rgb(var(--nb-shadow));
+}
+[data-theme^="cartoon"] .window-control:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+[data-theme^="cartoon"] .wc-min { background: rgb(var(--c-accent)); }
+[data-theme^="cartoon"] .wc-max { background: rgb(var(--nb-good)); }
+[data-theme^="cartoon"] .wc-close { background: rgb(var(--nb-red)); }
+
+/* Bundled reading font (Settings → Fonts). Full Noto Sans Thai variable font —
+   covers Thai AND Latin, works offline. */
+@font-face {
+  font-family: 'Noto Sans Thai';
+  src: url('/fonts/NotoSansThai-Variable.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Bundled Inter variable font — the cartoon themes' default reading font
+   (house style: 'Inter','Noto Sans Thai',system-ui). Works offline. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Variable.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Custom title bar: the app header doubles as the native title bar.
+   Interactive children must opt out of dragging or they become unclickable. */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+.titlebar-drag button,
+.titlebar-drag input,
+.titlebar-drag select,
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
 }
 
 /* Smooth programmatic panel open/close (toggles). Disabled while a resize
@@ -93,6 +176,14 @@ body {
 }
 [data-panel-group]:has([data-resize-handle-active]) [data-panel] {
   transition: none;
+}
+
+/* Native <select> dropdown lists follow the theme. The closed control is
+   styled by Tailwind classes; Chromium derives the popup colors from these. */
+select,
+select option {
+  background-color: rgb(var(--c-surface));
+  color: rgb(var(--c-fg));
 }
 
 /* Themed scrollbars (app chrome + xterm viewport). */

@@ -21,6 +21,10 @@ export type GlobalKeyboardCallbacks = {
   /** Current work mode. Ctrl+F is only handled here in 'md' mode; in 'code' mode
    *  CodeMirror's native search must handle it, so we don't intercept. */
   getMode?: () => Mode;
+  /** Content zoom step: +1 in, -1 out (Ctrl+= / Ctrl+-). */
+  onZoom?: (direction: 1 | -1) => void;
+  /** Reset content zoom to 100% (Ctrl+0). */
+  onZoomReset?: () => void;
 };
 
 export function installGlobalKeyboard(cb: GlobalKeyboardCallbacks): () => void {
@@ -44,6 +48,21 @@ export function installGlobalKeyboard(cb: GlobalKeyboardCallbacks): () => void {
     if (isCtrl && (key === 'f' || key === 'F') && e.shiftKey) {
       e.preventDefault();
       cb.onOpenGlobalSearch();
+      return;
+    }
+    if (isCtrl && (key === '=' || key === '+')) {
+      e.preventDefault();
+      cb.onZoom?.(1);
+      return;
+    }
+    if (isCtrl && key === '-') {
+      e.preventDefault();
+      cb.onZoom?.(-1);
+      return;
+    }
+    if (isCtrl && key === '0') {
+      e.preventDefault();
+      cb.onZoomReset?.();
       return;
     }
     if (key === 'F3') {

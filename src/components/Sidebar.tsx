@@ -19,6 +19,9 @@ type Props = {
   activeFile: { folderId: string; relativePath: string } | null;
   markdownOnly?: boolean;
   gitPanel?: ReactNode;
+  /** Toggle chip state — drives animated collapse/expand of the git split.
+   *  The Panel stays mounted so the global [data-panel] flex transition runs. */
+  gitVisible?: boolean;
   /** Drag-collapse/expand of the internal git split (so the Git toggle stays in sync). */
   onGitVisibilityChange?: (visible: boolean) => void;
   onPickFile: (folderId: string, relativePath: string) => void;
@@ -27,6 +30,8 @@ type Props = {
   onDropFolder: (result: DropResult) => void;
   onCopyFolderPath?: (hostPath: string) => void;
   onDropFolderOnTerminal?: (hostPath: string) => void;
+  /** Settings → Behavior: context menus close shortly after the mouse leaves. */
+  menuAutoHide?: boolean;
 };
 
 export function Sidebar({
@@ -34,6 +39,7 @@ export function Sidebar({
   activeFile,
   markdownOnly,
   gitPanel,
+  gitVisible,
   onGitVisibilityChange,
   onPickFile,
   onCloseFolder,
@@ -41,6 +47,7 @@ export function Sidebar({
   onDropFolder,
   onCopyFolderPath,
   onDropFolderOnTerminal,
+  menuAutoHide,
 }: Props) {
   const [filter, setFilter] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -70,11 +77,31 @@ export function Sidebar({
     }
     const p = gitPanelRef.current;
     if (p) {
-      p.expand();
-      if (p.getSize() < 10) p.resize(30);
+      if (gitVisible) {
+        p.expand();
+        if (p.getSize() < 10) p.resize(30);
+      } else {
+        p.collapse();
+      }
     }
     gitReadyRef.current = true;
+    // Mount-only by design — the toggle effect below reacts to gitVisible.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasGitPanel]);
+
+  // Animated open/close from the Git toggle chip. The Panel stays mounted so
+  // the global [data-panel] flex transition (globals.css) can animate it.
+  useEffect(() => {
+    if (!hasGitPanel) return;
+    const p = gitPanelRef.current;
+    if (!p) return;
+    if (gitVisible) {
+      p.expand();
+      if (p.getSize() < 10) p.resize(30);
+    } else {
+      p.collapse();
+    }
+  }, [gitVisible, hasGitPanel]);
 
   useEffect(() => {
     return subscribeReveal(({ folderId, relativePath }) => {
@@ -164,7 +191,7 @@ export function Sidebar({
             >
               + Open folder
             </button>
-            <p className="mt-2 text-center text-[10px] text-muted">
+            <p className="mt-2 text-center text-[0.625rem] text-muted">
               or drag &amp; drop a folder or file here
             </p>
           </>
@@ -187,6 +214,7 @@ export function Sidebar({
               onDropFolderOnTerminal={onDropFolderOnTerminal}
               filter={filter}
               flashRelativePath={flashing?.folderId === f.id ? flashing.relativePath : null}
+              menuAutoHide={menuAutoHide}
             />
           ))}
           {filter && !filteredHasAny && (
@@ -197,7 +225,10 @@ export function Sidebar({
         </Panel>
         {gitPanel && (
           <>
-            <PanelResizeHandle className="h-1.5 shrink-0 cursor-row-resize bg-border transition-colors hover:bg-accent" />
+            <PanelResizeHandle
+              className="h-1.5 shrink-0 cursor-row-resize bg-border transition-colors hover:bg-accent"
+              style={{ display: gitVisible ? undefined : 'none' }}
+            />
             <Panel
               ref={gitPanelRef}
               defaultSize={30}
@@ -233,15 +264,15 @@ function DropProgressBanner({ progress }: { progress: DropProgress }) {
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted">
         <div>
-          <div className="text-[10px] uppercase tracking-wide">Read</div>
+          <div className="text-[0.625rem] uppercase tracking-wide">Read</div>
           <div className="font-mono text-base text-accent">{mdFilesRead}</div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wide">Scanned</div>
+          <div className="text-[0.625rem] uppercase tracking-wide">Scanned</div>
           <div className="font-mono text-base text-muted">{filesScanned + mdFilesRead}</div>
         </div>
       </div>
-      <div className="mt-1 truncate text-[10px] text-muted" title={lastPath}>
+      <div className="mt-1 truncate text-[0.625rem] text-muted" title={lastPath}>
         {lastPath || ' '}
       </div>
     </div>

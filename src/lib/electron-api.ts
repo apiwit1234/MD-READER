@@ -23,7 +23,20 @@ type SpawnWindowOpts = {
   initial?: SpawnWindowInitial;
 };
 
-export type AppSettings = { autoUpdate: boolean };
+export type UiSize = 'small' | 'medium' | 'large';
+
+export type CustomFont = { id: string; label: string };
+
+export type AppSettings = {
+  autoUpdate: boolean;
+  uiSize: UiSize;
+  contentZoom: number;
+  contextMenuAutoHide: boolean;
+  fontSource: string;
+  fontSplit: boolean;
+  fontEnglish: string;
+  fontThai: string;
+};
 
 export type GitResult = { ok: boolean; code: number; stdout: string; stderr: string };
 export type GitDetect = { isRepo: boolean; root: string | null; branch: string | null };
@@ -77,6 +90,10 @@ type MdReader = {
   };
   window: {
     spawn: (opts: SpawnWindowOpts) => Promise<string>;
+    setTitleBarColors: (color: string) => Promise<boolean>;
+    minimize: () => Promise<boolean>;
+    maximizeToggle: () => Promise<boolean>;
+    close: () => Promise<boolean>;
   };
   clipboard: {
     saveImage: () => Promise<string | null>;
@@ -84,6 +101,13 @@ type MdReader = {
   settings: {
     get: () => Promise<AppSettings>;
     set: (patch: Partial<AppSettings>) => Promise<AppSettings>;
+    reset: () => Promise<AppSettings>;
+  };
+  fonts: {
+    list: () => Promise<CustomFont[]>;
+    add: () => Promise<{ ok: boolean; font?: CustomFont; error?: string | null }>;
+    remove: (id: string) => Promise<{ ok: boolean }>;
+    data: (id: string) => Promise<{ ok: boolean; bytes?: Uint8Array; format?: string; error?: string }>;
   };
   update: {
     check: () => Promise<{ ok: boolean; version?: string | null; error?: string }>;

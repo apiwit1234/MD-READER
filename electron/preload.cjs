@@ -72,6 +72,10 @@ contextBridge.exposeInMainWorld('mdreader', {
   },
   window: {
     spawn: (opts) => ipcRenderer.invoke('window:spawn', opts),
+    setTitleBarColors: (color) => ipcRenderer.invoke('window:setTitleBarColors', { color }),
+    minimize: () => ipcRenderer.invoke('window:minimize'),
+    maximizeToggle: () => ipcRenderer.invoke('window:maximizeToggle'),
+    close: () => ipcRenderer.invoke('window:close'),
   },
   clipboard: {
     saveImage: () => ipcRenderer.invoke('clipboard:saveImage'),
@@ -79,6 +83,13 @@ contextBridge.exposeInMainWorld('mdreader', {
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
     set: (patch) => ipcRenderer.invoke('settings:set', patch),
+    reset: () => ipcRenderer.invoke('settings:reset'),
+  },
+  fonts: {
+    list: () => ipcRenderer.invoke('fonts:list'),
+    add: () => ipcRenderer.invoke('fonts:add'),
+    remove: (id) => ipcRenderer.invoke('fonts:remove', id),
+    data: (id) => ipcRenderer.invoke('fonts:data', id),
   },
   update: {
     check: () => ipcRenderer.invoke('update:check'),

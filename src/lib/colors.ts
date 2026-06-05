@@ -9,6 +9,15 @@ export const FOLDER_COLORS = [
 
 export type FolderColor = (typeof FOLDER_COLORS)[number];
 
+/** Converts a theme CSS variable triplet like "248 250 252" to "#f8fafc".
+ *  Returns null when the input is not a triplet of 0-255 integers. */
+export function rgbTripletToHex(triplet: string): string | null {
+  const m = triplet.trim().match(/^(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})$/);
+  if (!m) return null;
+  const to2 = (s: string) => Math.min(255, parseInt(s, 10)).toString(16).padStart(2, '0');
+  return `#${to2(m[1])}${to2(m[2])}${to2(m[3])}`;
+}
+
 export function pickNextColor(usedColors: string[]): FolderColor {
   const counts = new Map<string, number>();
   for (const c of FOLDER_COLORS) counts.set(c, 0);

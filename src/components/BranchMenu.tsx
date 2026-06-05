@@ -48,7 +48,7 @@ export function BranchMenu({ branches, ahead, behind, onCheckout, onCreate, onMe
         className="flex w-full items-center justify-between rounded border border-border px-2 py-1 text-xs text-fg hover:bg-surface-2"
       >
         <span className="truncate">⎇ {current}</span>
-        <span className="ml-2 font-mono text-[10px] text-muted">↑{ahead} ↓{behind}</span>
+        <span className="ml-2 font-mono text-[0.625rem] text-muted">↑{ahead} ↓{behind}</span>
       </button>
       {open && branches && (
         <div className="absolute z-50 mt-1 flex max-h-80 w-full flex-col overflow-hidden rounded-md border border-border bg-surface text-xs shadow-lg">
@@ -156,7 +156,7 @@ function TabBtn({ active, onClick, label }: { active: boolean; onClick: () => vo
       type="button"
       onClick={onClick}
       className={[
-        'flex-1 rounded px-2 py-1 text-center text-[11px] transition-colors',
+        'flex-1 rounded px-2 py-1 text-center text-[0.6875rem] transition-colors',
         active ? 'bg-accent text-accent-fg' : 'text-muted hover:bg-surface-2',
       ].join(' ')}
     >
@@ -166,5 +166,5 @@ function TabBtn({ active, onClick, label }: { active: boolean; onClick: () => vo
 }
 
 function Empty() {
-  return <div className="px-2 py-1 text-[11px] text-muted">none</div>;
+  return <div className="px-2 py-1 text-[0.6875rem] text-muted">none</div>;
 }

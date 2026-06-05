@@ -29,10 +29,15 @@ export type GitStoreState = {
   lastError: string | null;
 };
 
-export function useGitStore(root: string | null) {
+/** `active=false` pauses background refreshes (window focus) while the Git
+ *  panel is collapsed — the panel stays mounted for the open/close animation,
+ *  but hidden panels must not spawn git subprocesses. Reactivating catches up. */
+export function useGitStore(root: string | null, active = true) {
   const [state, setState] = useState<GitStoreState>({ status: null, branches: null, busy: false, busyLabel: null, lastError: null });
   const rootRef = useRef(root);
   useEffect(() => { rootRef.current = root; }, [root]);
+  const activeRef = useRef(active);
+  useEffect(() => { activeRef.current = active; }, [active]);
 
   const refresh = useCallback(async () => {
     const r = rootRef.current;
@@ -47,11 +52,16 @@ export function useGitStore(root: string | null) {
 
   useEffect(() => { void refresh(); }, [root, refresh]);
   // Refresh when the window regains focus (catches terminal-side git changes).
+  // Skipped while inactive; the activation effect below catches up instead.
   useEffect(() => {
-    const onFocus = () => void refresh();
+    const onFocus = () => { if (activeRef.current) void refresh(); };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [refresh]);
+  // Catch up on whatever happened (terminal commits etc.) while hidden.
+  useEffect(() => {
+    if (active) void refresh();
+  }, [active, refresh]);
 
   /** Run a mutating git op then refresh; surfaces stderr on failure.
    *  `label` (set for slow network ops) drives a loading overlay. */

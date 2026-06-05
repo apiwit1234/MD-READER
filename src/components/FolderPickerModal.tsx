@@ -15,6 +15,8 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
   const [path, setPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Filters the CURRENT directory's subfolders by name. Reset on navigation.
+  const [folderFilter, setFolderFilter] = useState('');
 
   // Initialize to home dir on first open
   useEffect(() => {
@@ -29,6 +31,7 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setFolderFilter('');
     getApi().fs.browse(path)
       .then((d) => { if (!cancelled) setData(d); })
       .catch((e: Error) => { if (!cancelled) setError(e.message); })
@@ -48,6 +51,10 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
     const sep = parent.includes('\\') ? '\\' : '/';
     return parent + sep + name;
   };
+
+  const visibleEntries = (data?.entries ?? []).filter((e) =>
+    e.name.toLowerCase().includes(folderFilter.trim().toLowerCase()),
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
@@ -100,18 +107,32 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
           ))}
         </div>
 
+        <div className="border-b border-border px-5 py-2">
+          <input
+            type="search"
+            value={folderFilter}
+            onChange={(e) => setFolderFilter(e.target.value)}
+            placeholder="Search folders in this directory…"
+            aria-label="Search folders"
+            className="w-full rounded border border-border bg-bg px-2 py-1 text-sm text-fg outline-none placeholder:text-muted focus:border-accent"
+          />
+        </div>
+
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {loading && <div className="text-sm text-muted">Loading…</div>}
           {error && <div className="text-sm text-red-600">{error}</div>}
           {!loading && !error && data && data.entries.length === 0 && (
             <div className="text-sm text-muted">No subfolders here.</div>
           )}
+          {!loading && !error && data && data.entries.length > 0 && visibleEntries.length === 0 && (
+            <div className="text-sm text-muted">No folders match “{folderFilter}”.</div>
+          )}
           <ul className="space-y-1">
-            {data?.entries.map((e) => (
+            {visibleEntries.map((e) => (
               <li key={e.name}>
                 <button
                   className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-surface-2"
-                  onClick={() => setPath(joinPath(data.currentPath, e.name))}
+                  onClick={() => { if (data) setPath(joinPath(data.currentPath, e.name)); }}
                 >
                   <span aria-hidden>📁</span>
                   <span>{e.name}</span>

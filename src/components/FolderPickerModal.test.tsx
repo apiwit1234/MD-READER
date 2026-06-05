@@ -67,6 +67,24 @@ describe('FolderPickerModal', () => {
     expect(picks).toEqual(['C:\\Users\\me\\damon']);
   });
 
+  it('filters the folder list by the search box', async () => {
+    mockBrowse('C:\\Users\\me', ['arceus', 'damon', 'docs']);
+    render(<FolderPickerModal isOpen onClose={() => {}} onPick={() => {}} recentFolders={[]} />);
+    await waitFor(() => screen.getByText('damon'));
+    fireEvent.change(screen.getByLabelText('Search folders'), { target: { value: 'da' } });
+    expect(screen.getByText('damon')).toBeInTheDocument();
+    expect(screen.queryByText('arceus')).not.toBeInTheDocument();
+    expect(screen.queryByText('docs')).not.toBeInTheDocument();
+  });
+
+  it('shows a no-match message when the filter excludes everything', async () => {
+    mockBrowse('C:\\Users\\me', ['damon']);
+    render(<FolderPickerModal isOpen onClose={() => {}} onPick={() => {}} recentFolders={[]} />);
+    await waitFor(() => screen.getByText('damon'));
+    fireEvent.change(screen.getByLabelText('Search folders'), { target: { value: 'zzz' } });
+    expect(screen.getByText(/no folders match/i)).toBeInTheDocument();
+  });
+
   it('renders recent folders section', async () => {
     mockBrowse('C:\\Users\\me', []);
     render(

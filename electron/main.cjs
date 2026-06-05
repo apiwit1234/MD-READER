@@ -9,6 +9,9 @@ const { scanFiles } = require('./search-core.cjs');
 const git = require('./git.cjs');
 const { createSettingsStore } = require('./settings.cjs');
 const { createErrorFileWriter } = require('./log-files.cjs');
+// NOTE (v1.0.5 rename): userData stays %APPDATA%\md-reader — Electron derives
+// it from package.json "name", which intentionally did NOT change when the
+// product name became "PAX Reader". Settings/localStorage survive the update.
 
 // --- Error logging ---
 // Everything goes to userData/logs: a running mdreader.log PLUS one file per
@@ -78,6 +81,27 @@ ipcMain.handle('settings:get', () => getSettingsStore().read());
 ipcMain.handle('settings:set', (_e, patch) =>
   getSettingsStore().write(patch && typeof patch === 'object' ? patch : {}),
 );
+ipcMain.handle('settings:reset', () => getSettingsStore().reset());
+
+// --- Custom reading fonts (userData/fonts) ---
+const { createFontStore } = require('./fonts.cjs');
+let fontStore = null;
+function getFontStore() {
+  if (!fontStore) fontStore = createFontStore(app.getPath('userData'));
+  return fontStore;
+}
+ipcMain.handle('fonts:list', () => getFontStore().list());
+ipcMain.handle('fonts:add', async () => {
+  const r = await dialog.showOpenDialog({
+    title: 'Add font',
+    properties: ['openFile'],
+    filters: [{ name: 'Fonts', extensions: ['ttf', 'otf', 'woff', 'woff2'] }],
+  });
+  if (r.canceled || r.filePaths.length === 0) return { ok: false, error: null };
+  return getFontStore().addFromPath(r.filePaths[0]);
+});
+ipcMain.handle('fonts:remove', (_e, id) => getFontStore().remove(typeof id === 'string' ? id : ''));
+ipcMain.handle('fonts:data', (_e, id) => getFontStore().data(typeof id === 'string' ? id : ''));
 
 // --- Auto-update (electron-updater + GitHub Releases) ---
 let updaterRef = null;
@@ -470,6 +494,33 @@ ipcMain.on('fs:search:cancel', (_e, sessionId) => {
   }
 });
 
+// Theme changed in the renderer — repaint the window background and remember
+// the color so the NEXT launch paints in-theme (no flash).
+ipcMain.handle('window:setTitleBarColors', (e, payload) => {
+  const color = payload && typeof payload.color === 'string' ? payload.color : '';
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) return false;
+  const win = BrowserWindow.fromWebContents(e.sender);
+  if (!win || win.isDestroyed()) return false;
+  try { win.setBackgroundColor(color); } catch {}
+  getSettingsStore().write({ windowBackground: color });
+  return true;
+});
+
+// Custom macOS-style window controls (frameless window).
+function senderWindow(e) {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  return win && !win.isDestroyed() ? win : null;
+}
+ipcMain.handle('window:minimize', (e) => { senderWindow(e)?.minimize(); return true; });
+ipcMain.handle('window:maximizeToggle', (e) => {
+  const win = senderWindow(e);
+  if (!win) return false;
+  if (win.isMaximized()) win.unmaximize();
+  else win.maximize();
+  return true;
+});
+ipcMain.handle('window:close', (e) => { senderWindow(e)?.close(); return true; });
+
 // Spawn a new browser window, optionally seeded with an initial tab/folder.
 ipcMain.handle('window:spawn', async (_e, opts) => {
   const windowId = nextSpawnedWindowId();
@@ -570,12 +621,19 @@ async function createWindow(opts = {}) {
   // Only the "main" window restores last-session bounds.
   const restored = isMain ? await readWindowState() : null;
 
+  // Paint the window in the last-used theme color from the first frame.
+  const startupSettings = getSettingsStore().read();
+  const themedBg = startupSettings.windowBackground;
+
   const win = new BrowserWindow({
     width: width ?? restored?.width ?? 1400,
     height: height ?? restored?.height ?? 900,
     x: x ?? restored?.x,
     y: y ?? restored?.y,
-    backgroundColor: '#ffffff',
+    backgroundColor: themedBg || '#ffffff',
+    // Frameless with the app header as the title bar. Window controls are
+    // custom macOS-style buttons in the renderer (window:minimize etc.).
+    titleBarStyle: 'hidden',
     autoHideMenuBar: true,
     // Packaged builds get the icon from the exe (electron-builder embeds
     // build/icon.png); dev needs it set explicitly to show in the taskbar.
@@ -586,7 +644,7 @@ async function createWindow(opts = {}) {
       sandbox: false,
       nodeIntegration: false,
     },
-    title: 'MD Reader',
+    title: 'PAX Reader',
   });
 
   if (isMain && restored?.maximized) win.maximize();

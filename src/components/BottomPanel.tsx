@@ -13,7 +13,7 @@ type Props = {
 
 export function BottomPanel({ activeTab, onActiveTabChange, onCollapse, terminal, search, showHeader = true }: Props) {
   return (
-    <div className="flex h-full flex-col bg-bg">
+    <div className="flex h-full flex-col bg-bg" data-zoom-zone>
       {showHeader && (
         <div className="flex items-center border-b border-border bg-surface">
           <TabButton id="terminal" label="Terminal" active={activeTab === 'terminal'} onClick={onActiveTabChange} />
