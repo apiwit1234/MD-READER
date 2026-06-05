@@ -12,7 +12,8 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { themeMode } from '@/lib/themes';
 import { loadState, saveState, defaultState, clearedState, saveSearchState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
 import { pickNextColor, rgbTripletToHex } from '@/lib/colors';
-import { getApi, hasApi, type SpawnWindowInitial, type AppSettings } from '@/lib/electron-api';
+import { getApi, hasApi, type SpawnWindowInitial, type AppSettings, type CustomFont } from '@/lib/electron-api';
+import { buildFontChain } from '@/lib/fonts';
 import { getWindowContext, withWindowSuffix } from '@/lib/window-context';
 import type { DropResult } from '@/lib/drop';
 import type { AppState, OpenedFolder, Theme, BottomPanelState, SearchResponse } from '@/types';
@@ -144,6 +145,49 @@ export default function Page() {
     updateSettings({ contentZoom: 100 });
     showToast('Zoom 100%');
   }, [updateSettings]);
+
+  // Custom reading fonts — list from userData/fonts, registered on demand.
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
+  const loadedFontIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!hasApi()) return;
+    void getApi().fonts.list().then(setCustomFonts);
+  }, []);
+
+  // Register referenced custom fonts with the document (FontFace API), once each.
+  useEffect(() => {
+    if (!hasApi() || !appSettings) return;
+    const revertPatch = (): Partial<AppSettings> => (appSettingsRef.current?.fontSplit
+      ? { fontEnglish: 'default', fontThai: 'default' }
+      : { fontSource: 'default' });
+    const referenced = (appSettings.fontSplit
+      ? [appSettings.fontEnglish, appSettings.fontThai]
+      : [appSettings.fontSource]
+    ).filter((id) => id.startsWith('custom-') && !loadedFontIdsRef.current.has(id));
+    for (const id of referenced) {
+      loadedFontIdsRef.current.add(id);
+      void getApi().fonts.data(id).then(async (r) => {
+        if (!r.ok || !r.bytes) {
+          loadedFontIdsRef.current.delete(id);
+          showToast('Font could not be loaded — reverting to default');
+          updateSettings(revertPatch());
+          return;
+        }
+        try {
+          const face = new FontFace(id, r.bytes as unknown as ArrayBuffer);
+          await face.load();
+          document.fonts.add(face);
+        } catch {
+          loadedFontIdsRef.current.delete(id);
+          showToast('Font could not be loaded — reverting to default');
+          updateSettings(revertPatch());
+        }
+      });
+    }
+  }, [appSettings, customFonts, updateSettings]);
+
+  const readingFontFamily = appSettings ? buildFontChain(appSettings, customFonts) : '';
 
   // Stable refs so the mount-only listeners below always call the latest logic.
   const changeZoomRef = useRef(changeZoom);
@@ -1282,6 +1326,7 @@ export default function Page() {
                             findBarOpen={findBarOpenForActive}
                             onFindBarOpenChange={setFindBarOpenForActive}
                             activeHighlight={activeHighlight}
+                            fontFamily={readingFontFamily}
                           />
                         </div>
                         <div className="h-full" hidden={mode !== 'code'}>
