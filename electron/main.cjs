@@ -78,6 +78,7 @@ ipcMain.handle('settings:get', () => getSettingsStore().read());
 ipcMain.handle('settings:set', (_e, patch) =>
   getSettingsStore().write(patch && typeof patch === 'object' ? patch : {}),
 );
+ipcMain.handle('settings:reset', () => getSettingsStore().reset());
 
 // --- Auto-update (electron-updater + GitHub Releases) ---
 let updaterRef = null;

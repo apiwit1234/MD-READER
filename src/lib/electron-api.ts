@@ -23,7 +23,18 @@ type SpawnWindowOpts = {
   initial?: SpawnWindowInitial;
 };
 
-export type AppSettings = { autoUpdate: boolean };
+export type UiSize = 'small' | 'medium' | 'large';
+
+export type AppSettings = {
+  autoUpdate: boolean;
+  uiSize: UiSize;
+  contentZoom: number;
+  contextMenuAutoHide: boolean;
+  fontSource: string;
+  fontSplit: boolean;
+  fontEnglish: string;
+  fontThai: string;
+};
 
 export type GitResult = { ok: boolean; code: number; stdout: string; stderr: string };
 export type GitDetect = { isRepo: boolean; root: string | null; branch: string | null };
@@ -84,6 +95,7 @@ type MdReader = {
   settings: {
     get: () => Promise<AppSettings>;
     set: (patch: Partial<AppSettings>) => Promise<AppSettings>;
+    reset: () => Promise<AppSettings>;
   };
   update: {
     check: () => Promise<{ ok: boolean; version?: string | null; error?: string }>;

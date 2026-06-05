@@ -12,7 +12,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { themeMode } from '@/lib/themes';
 import { loadState, saveState, defaultState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
 import { pickNextColor } from '@/lib/colors';
-import { getApi, hasApi, type SpawnWindowInitial } from '@/lib/electron-api';
+import { getApi, hasApi, type SpawnWindowInitial, type AppSettings } from '@/lib/electron-api';
 import { getWindowContext, withWindowSuffix } from '@/lib/window-context';
 import type { DropResult } from '@/lib/drop';
 import type { AppState, OpenedFolder, Theme, BottomPanelState, SearchResponse } from '@/types';
@@ -96,6 +96,22 @@ export default function Page() {
 
   // Once a user has ever shown the terminal, we keep TerminalPanel mounted so toggling off doesn't kill PTYs.
   const [terminalShownOnce, setTerminalShownOnce] = useState(false);
+
+  // Persisted app settings (userData/settings.json) — loaded once, written
+  // through updateSettings so this state always mirrors the store.
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+  const appSettingsRef = useRef<AppSettings | null>(null);
+  useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
+
+  useEffect(() => {
+    if (!hasApi()) return;
+    void getApi().settings.get().then(setAppSettings);
+  }, []);
+
+  const updateSettings = useCallback((patch: Partial<AppSettings>) => {
+    if (!hasApi()) return;
+    void getApi().settings.set(patch).then(setAppSettings);
+  }, []);
 
   const [bottomPanel, setBottomPanel] = useState<BottomPanelState>({ open: false, activeTab: 'terminal' });
   const [mode, setMode] = useState<Mode>('md');

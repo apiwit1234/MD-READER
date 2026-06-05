@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld('mdreader', {
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
     set: (patch) => ipcRenderer.invoke('settings:set', patch),
+    reset: () => ipcRenderer.invoke('settings:reset'),
   },
   update: {
     check: () => ipcRenderer.invoke('update:check'),
