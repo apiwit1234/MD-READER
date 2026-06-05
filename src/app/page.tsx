@@ -1,6 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PanelGroup, Panel, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
 import { Sidebar } from '@/components/Sidebar';
 import { TabBar, type TabView } from '@/components/TabBar';
@@ -123,6 +123,8 @@ export default function Page() {
   const conflictToastRef = useRef<Record<string, string>>({});
   // Reassigned every render so the IPC subscription always sees fresh state.
   const liveReloadRef = useRef<(root: string) => void>(() => {});
+  // Tabs currently refreshing from an external disk change (spinner in TabBar).
+  const [updatingPaths, setUpdatingPaths] = useState<Record<string, boolean>>({});
   // Bump to force a re-render when dirty state changes (the store itself is a ref).
   const [bufferTick, setBufferTick] = useState(0);
   // Last-known dirty flag per path, so we only re-render on clean<->dirty transitions
@@ -179,28 +181,52 @@ export default function Page() {
       if (p !== activeAbs && isUnderRoot(p, root)) store.dropIfClean(p);
     }
 
-    // 3) Refresh the active file when it lives under this root.
+    // 3) Refresh the active file when it lives under this root. The tab shows
+    //    a spinner from now until the refreshed view commits; the heavy
+    //    preview re-render runs in a transition so the UI never blocks.
     if (!activeAbs || !isUnderRoot(activeAbs, root)) return;
+    setUpdatingPaths((u) => (u[activeAbs] ? u : { ...u, [activeAbs]: true }));
+    const clearUpdating = () =>
+      setUpdatingPaths((u) => {
+        if (!u[activeAbs]) return u;
+        const next = { ...u };
+        delete next[activeAbs];
+        return next;
+      });
     getApi().fs.read(activeAbs)
       .then((d) => {
         const known = contentCache[activeAbs]?.content;
         const buffer: BufferState =
           store.get(activeAbs) === undefined ? 'none' : store.isDirty(activeAbs) ? 'dirty' : 'clean';
         const action = reloadAction(d.content, known, buffer);
-        if (action === 'ignore') return;
-        setContentCache((c) => ({ ...c, [activeAbs]: { content: d.content, hostPath: d.hostPath } }));
+        if (action === 'ignore') {
+          clearUpdating();
+          return;
+        }
         if (action === 'refresh') {
           store.replaceIfClean(activeAbs, d.content);
-          setContent(d.content);
-          setFileRevisions((r) => ({ ...r, [activeAbs]: (r[activeAbs] ?? 0) + 1 }));
-        } else if (conflictToastRef.current[activeAbs] !== d.content) {
-          conflictToastRef.current[activeAbs] = d.content;
-          showToast('File changed on disk — your unsaved edits are kept');
+          // Low-priority render: markdown re-parse + mermaid re-render happen
+          // in the background; the spinner disappears in the same commit that
+          // shows the new content.
+          startTransition(() => {
+            setContentCache((c) => ({ ...c, [activeAbs]: { content: d.content, hostPath: d.hostPath } }));
+            setContent(d.content);
+            setFileRevisions((r) => ({ ...r, [activeAbs]: (r[activeAbs] ?? 0) + 1 }));
+            clearUpdating();
+          });
+        } else {
+          setContentCache((c) => ({ ...c, [activeAbs]: { content: d.content, hostPath: d.hostPath } }));
+          clearUpdating();
+          if (conflictToastRef.current[activeAbs] !== d.content) {
+            conflictToastRef.current[activeAbs] = d.content;
+            showToast('File changed on disk — your unsaved edits are kept');
+          }
         }
       })
       .catch(() => {
         // Transient (atomic rename-write) or deleted file — keep the current
         // view; the next watcher event retries.
+        clearUpdating();
       });
   };
 
@@ -574,6 +600,7 @@ export default function Page() {
         filename: t.relativePath.split('/').pop() || t.relativePath,
         pinned: t.pinned,
         dirty: abs ? contentStoreRef.current.isDirty(abs) : false,
+        updating: abs ? !!updatingPaths[abs] : false,
       };
     });
     // Pinned first, preserve order within each group.
@@ -582,7 +609,7 @@ export default function Page() {
     return [...pinned, ...rest];
     // bufferTick re-derives dirty flags after edits/saves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.openTabs, state.openedFolders, bufferTick]);
+  }, [state.openTabs, state.openedFolders, bufferTick, updatingPaths]);
 
   // MD mode only lists markdown tabs; Code/Terminal list everything.
   const visibleTabViews = useMemo(

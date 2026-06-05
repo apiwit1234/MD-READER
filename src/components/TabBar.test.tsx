@@ -36,4 +36,13 @@ describe('TabBar', () => {
     await user.click(screen.getAllByLabelText(/close tab/i)[0]);
     expect(closes).toEqual(['README.md']);
   });
+
+  it('shows an updating spinner on tabs refreshing from disk', () => {
+    const updatingTabs = [
+      { ...tabs[0], updating: true },
+      tabs[1],
+    ];
+    render(<TabBar tabs={updatingTabs} onFocus={() => {}} onClose={() => {}} />);
+    expect(screen.getAllByLabelText('updating')).toHaveLength(1);
+  });
 });

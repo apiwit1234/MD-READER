@@ -9,6 +9,8 @@ export type TabView = {
   filename: string;
   pinned?: boolean;
   dirty?: boolean;
+  /** File is being refreshed from an external disk change. */
+  updating?: boolean;
 };
 
 type Props = {
@@ -191,6 +193,9 @@ export function TabBar({
               {t.dirty && (
                 <span aria-label="unsaved" title="unsaved changes" className="text-amber-500">●</span>
               )}
+              {t.updating && (
+                <span aria-label="updating" title="updating from disk" className="inline-block animate-spin text-accent">↻</span>
+              )}
               <span className="truncate">{t.filename}</span>
               {!t.pinned && (
                 <button
@@ -231,6 +236,7 @@ export function TabBar({
                   <span className="h-3 w-[3px] shrink-0 rounded" style={{ background: t.color }} aria-hidden />
                   {t.pinned && <span className="text-amber-500">📌</span>}
                   {t.dirty && <span className="text-amber-500">●</span>}
+                  {t.updating && <span className="inline-block animate-spin text-accent">↻</span>}
                   <span className="flex-1 truncate">{t.filename}</span>
                   {!t.pinned && (
                     <button
