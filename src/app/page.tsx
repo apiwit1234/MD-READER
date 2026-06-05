@@ -1,6 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PanelGroup, Panel, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
 import { Sidebar } from '@/components/Sidebar';
 import { TabBar, type TabView } from '@/components/TabBar';
@@ -21,6 +21,7 @@ import { SearchPanel, type OpenResultArg } from '@/components/SearchPanel';
 import { SearchModal } from '@/components/SearchModal';
 import { installGlobalKeyboard } from '@/lib/keyboard';
 import { flagFromPanelEvent } from '@/lib/panel-sync';
+import { reloadAction, isUnderRoot, type BufferState } from '@/lib/live-reload';
 import { revealFile } from '@/lib/sidebar-events';
 import { ModeSwitcher } from '@/components/ModeSwitcher';
 import type { Mode } from '@/lib/mode';
@@ -114,6 +115,16 @@ export default function Page() {
   // Handle for the TerminalPanel component to type into its active terminal.
   const terminalHandleRef = useRef<{ typeIntoActive: (text: string) => void } | null>(null);
   const contentStoreRef = useRef<ContentStore>(new ContentStore());
+  // Bumped per path on external refresh; remounts CodeEditor (it ignores
+  // `value` after mount by design — see CodeEditor.tsx:80).
+  const [fileRevisions, setFileRevisions] = useState<Record<string, number>>({});
+  // Last disk content we toasted a dirty-buffer conflict for (per path) —
+  // prevents a toast per watcher tick while the user keeps editing.
+  const conflictToastRef = useRef<Record<string, string>>({});
+  // Reassigned every render so the IPC subscription always sees fresh state.
+  const liveReloadRef = useRef<(root: string) => void>(() => {});
+  // Tabs currently refreshing from an external disk change (spinner in TabBar).
+  const [updatingPaths, setUpdatingPaths] = useState<Record<string, boolean>>({});
   // Bump to force a re-render when dirty state changes (the store itself is a ref).
   const [bufferTick, setBufferTick] = useState(0);
   // Last-known dirty flag per path, so we only re-render on clean<->dirty transitions
@@ -135,6 +146,95 @@ export default function Page() {
     setMode(loadMode());
     setHydrated(true);
     setBridgeMissing(!hasApi());
+  }, []);
+
+  // Watch opened folder roots so external file changes reach the renderer.
+  const watchKey = state.openedFolders.filter((f) => !f.isVirtual).map((f) => f.hostPath).join('|');
+  useEffect(() => {
+    if (!hasApi() || !watchKey) return;
+    const roots = watchKey.split('|');
+    roots.forEach((r) => { void getApi().fs.watch(r); });
+    return () => { roots.forEach((r) => { void getApi().fs.unwatch(r); }); };
+  }, [watchKey]);
+
+  // Live-reload handler: kept in a ref (reassigned every render) so the
+  // one-time IPC subscription below always calls the latest version with
+  // fresh state.
+  liveReloadRef.current = (root: string) => {
+    const store = contentStoreRef.current;
+    const activeAbs = activeAbsPath();
+
+    // 1) Invalidate cached content under this root (except the active file,
+    //    which is refreshed explicitly below).
+    setContentCache((c) => {
+      let changed = false;
+      const next: typeof c = {};
+      for (const [p, v] of Object.entries(c)) {
+        if (p !== activeAbs && isUnderRoot(p, root)) { changed = true; continue; }
+        next[p] = v;
+      }
+      return changed ? next : c;
+    });
+
+    // 2) Drop clean non-active buffers so reopening re-seeds from disk.
+    for (const p of store.paths()) {
+      if (p !== activeAbs && isUnderRoot(p, root)) store.dropIfClean(p);
+    }
+
+    // 3) Refresh the active file when it lives under this root. The tab shows
+    //    a spinner from now until the refreshed view commits; the heavy
+    //    preview re-render runs in a transition so the UI never blocks.
+    if (!activeAbs || !isUnderRoot(activeAbs, root)) return;
+    setUpdatingPaths((u) => (u[activeAbs] ? u : { ...u, [activeAbs]: true }));
+    const clearUpdating = () =>
+      setUpdatingPaths((u) => {
+        if (!u[activeAbs]) return u;
+        const next = { ...u };
+        delete next[activeAbs];
+        return next;
+      });
+    getApi().fs.read(activeAbs)
+      .then((d) => {
+        const known = contentCache[activeAbs]?.content;
+        const buffer: BufferState =
+          store.get(activeAbs) === undefined ? 'none' : store.isDirty(activeAbs) ? 'dirty' : 'clean';
+        const action = reloadAction(d.content, known, buffer);
+        if (action === 'ignore') {
+          clearUpdating();
+          return;
+        }
+        if (action === 'refresh') {
+          store.replaceIfClean(activeAbs, d.content);
+          // Low-priority render: markdown re-parse + mermaid re-render happen
+          // in the background; the spinner disappears in the same commit that
+          // shows the new content.
+          startTransition(() => {
+            setContentCache((c) => ({ ...c, [activeAbs]: { content: d.content, hostPath: d.hostPath } }));
+            setContent(d.content);
+            setFileRevisions((r) => ({ ...r, [activeAbs]: (r[activeAbs] ?? 0) + 1 }));
+            clearUpdating();
+          });
+        } else {
+          setContentCache((c) => ({ ...c, [activeAbs]: { content: d.content, hostPath: d.hostPath } }));
+          clearUpdating();
+          if (conflictToastRef.current[activeAbs] !== d.content) {
+            conflictToastRef.current[activeAbs] = d.content;
+            showToast('File changed on disk — your unsaved edits are kept');
+          }
+        }
+      })
+      .catch(() => {
+        // Transient (atomic rename-write) or deleted file — keep the current
+        // view; the next watcher event retries.
+        clearUpdating();
+      });
+  };
+
+  // One-time subscription to watcher events.
+  useEffect(() => {
+    if (!hasApi()) return;
+    const off = getApi().fs.onChanged((root) => liveReloadRef.current(root));
+    return () => { off(); };
   }, []);
 
   // Receive initial state via IPC for spawned (tear-off) windows.
@@ -500,6 +600,7 @@ export default function Page() {
         filename: t.relativePath.split('/').pop() || t.relativePath,
         pinned: t.pinned,
         dirty: abs ? contentStoreRef.current.isDirty(abs) : false,
+        updating: abs ? !!updatingPaths[abs] : false,
       };
     });
     // Pinned first, preserve order within each group.
@@ -508,7 +609,7 @@ export default function Page() {
     return [...pinned, ...rest];
     // bufferTick re-derives dirty flags after edits/saves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.openTabs, state.openedFolders, bufferTick]);
+  }, [state.openTabs, state.openedFolders, bufferTick, updatingPaths]);
 
   // MD mode only lists markdown tabs; Code/Terminal list everything.
   const visibleTabViews = useMemo(
@@ -1103,7 +1204,7 @@ export default function Page() {
                             }
                             const editor = (
                               <CodeEditor
-                                key={p}
+                                key={`${p}:${fileRevisions[p] ?? 0}`}
                                 path={p}
                                 value={val}
                                 theme={themeMode(state.theme)}

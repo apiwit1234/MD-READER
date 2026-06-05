@@ -50,3 +50,44 @@ describe('ContentStore', () => {
     expect(s.get('/missing')).toBeUndefined();
   });
 });
+
+describe('live-reload additions', () => {
+  it('paths lists every buffered path', () => {
+    const s = new ContentStore();
+    s.seed('C:\\a.md', 'one');
+    s.seed('C:\\b.md', 'two');
+    expect(s.paths().sort()).toEqual(['C:\\a.md', 'C:\\b.md']);
+  });
+
+  it('replaceIfClean reseeds clean and absent buffers', () => {
+    const s = new ContentStore();
+    expect(s.replaceIfClean('C:\\new.md', 'fresh')).toBe(true);
+    expect(s.get('C:\\new.md')).toBe('fresh');
+
+    s.seed('C:\\a.md', 'old');
+    expect(s.replaceIfClean('C:\\a.md', 'fresh')).toBe(true);
+    expect(s.get('C:\\a.md')).toBe('fresh');
+    expect(s.isDirty('C:\\a.md')).toBe(false);
+  });
+
+  it('replaceIfClean leaves dirty buffers untouched', () => {
+    const s = new ContentStore();
+    s.seed('C:\\a.md', 'old');
+    s.set('C:\\a.md', 'edited');
+    expect(s.replaceIfClean('C:\\a.md', 'fresh')).toBe(false);
+    expect(s.get('C:\\a.md')).toBe('edited');
+    expect(s.isDirty('C:\\a.md')).toBe(true);
+  });
+
+  it('dropIfClean removes clean buffers and keeps dirty ones', () => {
+    const s = new ContentStore();
+    s.seed('C:\\clean.md', 'x');
+    s.seed('C:\\dirty.md', 'x');
+    s.set('C:\\dirty.md', 'y');
+    expect(s.dropIfClean('C:\\clean.md')).toBe(true);
+    expect(s.get('C:\\clean.md')).toBeUndefined();
+    expect(s.dropIfClean('C:\\dirty.md')).toBe(false);
+    expect(s.get('C:\\dirty.md')).toBe('y');
+    expect(s.dropIfClean('C:\\absent.md')).toBe(true);
+  });
+});

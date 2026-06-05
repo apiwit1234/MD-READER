@@ -38,4 +38,24 @@ export class ContentStore {
     for (const p of this.buffer.keys()) if (this.isDirty(p)) out.push(p);
     return out;
   }
+
+  /** Every path currently holding a buffer. */
+  paths(): string[] {
+    return [...this.buffer.keys()];
+  }
+
+  /** Reseed with fresh disk content unless the buffer has unsaved edits. */
+  replaceIfClean(path: string, content: string): boolean {
+    if (this.isDirty(path)) return false;
+    this.seed(path, content);
+    return true;
+  }
+
+  /** Drop a clean buffer so the next open re-seeds from a fresh disk read. */
+  dropIfClean(path: string): boolean {
+    if (this.isDirty(path)) return false;
+    this.baseline.delete(path);
+    this.buffer.delete(path);
+    return true;
+  }
 }
