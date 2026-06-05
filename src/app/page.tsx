@@ -481,16 +481,15 @@ export default function Page() {
     root.classList.toggle('dark', themeMode(state.theme) === 'dark');
   }, [state.theme, hydrated]);
 
-  // Sync the native title-bar overlay with the theme's surface color and the
-  // UI-size header height (h-10 = 2.5rem → 35/40/45px).
+  // Keep the OS window background in the theme's surface color (no white
+  // flash on launch; painted behind the frameless window).
   useEffect(() => {
     if (!hydrated || !hasApi()) return;
     const root = document.documentElement;
     const surface = getComputedStyle(root).getPropertyValue('--c-surface');
     const hex = rgbTripletToHex(surface);
-    const height = { small: 35, medium: 40, large: 45 }[appSettings?.uiSize ?? 'medium'];
-    if (hex) void getApi().window.setTitleBarColors(hex, height);
-  }, [state.theme, hydrated, appSettings]);
+    if (hex) void getApi().window.setTitleBarColors(hex);
+  }, [state.theme, hydrated]);
 
   useEffect(() => {
     if ((bottomPanel.open && bottomPanel.activeTab === 'terminal') && !terminalShownOnce) setTerminalShownOnce(true);
@@ -1182,10 +1181,7 @@ export default function Page() {
 
   return (
     <div className="flex h-full flex-col">
-      <header
-        className="titlebar-drag flex h-10 shrink-0 items-center justify-between border-b border-border bg-surface px-4"
-        style={{ paddingRight: 'calc(100vw - env(titlebar-area-width, 100vw) - env(titlebar-area-x, 0px) + 1rem)' }}
-      >
+      <header className="titlebar-drag flex h-10 shrink-0 items-center justify-between border-b border-border bg-surface px-4">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icon.png" alt="" aria-hidden className="h-5 w-5 shrink-0" />
@@ -1221,6 +1217,7 @@ export default function Page() {
           >
             ⚙️
           </button>
+          {hasApi() && <WindowControls />}
         </div>
       </header>
 
@@ -1530,6 +1527,41 @@ export default function Page() {
           {toast}
         </div>
       )}
+    </div>
+  );
+}
+
+/** macOS-style traffic-light window controls for the frameless window.
+ *  Glyphs appear on hover of the group, like macOS. Close stays in the
+ *  top-right corner (Windows muscle memory); colors follow macOS. */
+function WindowControls() {
+  const btn = 'flex h-3.5 w-3.5 items-center justify-center rounded-full text-[0px] font-bold leading-none text-black/60 ring-1 ring-black/15 transition-colors group-hover:text-[0.5625rem]';
+  return (
+    <div className="group titlebar-no-drag ml-1 flex shrink-0 items-center gap-2" aria-label="Window controls">
+      <button
+        type="button"
+        aria-label="Minimize window"
+        onClick={() => { void getApi().window.minimize(); }}
+        className={`${btn} bg-[#FEBC2E] hover:bg-[#f5b525]`}
+      >
+        −
+      </button>
+      <button
+        type="button"
+        aria-label="Maximize or restore window"
+        onClick={() => { void getApi().window.maximizeToggle(); }}
+        className={`${btn} bg-[#28C840] hover:bg-[#24b53a]`}
+      >
+        +
+      </button>
+      <button
+        type="button"
+        aria-label="Close window"
+        onClick={() => { void getApi().window.close(); }}
+        className={`${btn} bg-[#FF5F57] hover:bg-[#f0524a]`}
+      >
+        ✕
+      </button>
     </div>
   );
 }

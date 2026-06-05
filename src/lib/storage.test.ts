@@ -23,7 +23,7 @@ describe('storage', () => {
   it('round-trips state', () => {
     const s = defaultState();
     s.theme = 'dark';
-    s.themeFavorites = ['cartoon', 'dark'];
+    s.themeFavorites = ['cartoon-light', 'dark'];
     s.openedFolders.push({
       id: 'abc',
       hostPath: 'C:\\x',
@@ -45,8 +45,8 @@ describe('storage', () => {
     expect(loadState()).toEqual(defaultState());
   });
 
-  it('accepts all three themes', () => {
-    for (const theme of ['light', 'dark', 'cartoon'] as const) {
+  it('accepts all four themes', () => {
+    for (const theme of ['light', 'dark', 'cartoon-light', 'cartoon-dark'] as const) {
       const s = defaultState();
       s.theme = theme;
       saveState(s);
@@ -179,7 +179,7 @@ describe('clearedState', () => {
   it('clears folders and tabs but keeps theme, favorites and recents', () => {
     const prev: AppState = {
       theme: 'dark',
-      themeFavorites: ['dark', 'cartoon'],
+      themeFavorites: ['dark', 'cartoon-light'],
       openedFolders: [{ id: 'f1', hostPath: 'C:/docs', name: 'docs', color: '#f00', expanded: true }],
       openTabs: [{ folderId: 'f1', relativePath: 'a.md', active: true }],
       recentFolders: [{ hostPath: 'C:/docs', lastOpenedAt: 123 }],
@@ -188,7 +188,7 @@ describe('clearedState', () => {
     expect(next.openedFolders).toEqual([]);
     expect(next.openTabs).toEqual([]);
     expect(next.theme).toBe('dark');
-    expect(next.themeFavorites).toEqual(['dark', 'cartoon']);
+    expect(next.themeFavorites).toEqual(['dark', 'cartoon-light']);
     expect(next.recentFolders).toEqual([{ hostPath: 'C:/docs', lastOpenedAt: 123 }]);
   });
 

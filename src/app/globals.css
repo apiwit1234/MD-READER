@@ -39,19 +39,37 @@ html.ui-large { font-size: 18px; }
   --radius: 6px;
 }
 
-/* Cartoon — gitingest.com-inspired neo-brutalist (cream, thick ink borders,
-   hard offset shadows). Light-base. */
-[data-theme="cartoon"] {
-  --c-bg: 255 253 248;
-  --c-surface: 255 244 218;
-  --c-surface-2: 235 219 183;
-  --c-fg: 17 24 39;
-  --c-muted: 75 85 99;
-  --c-border: 17 24 39;
-  --c-accent: 255 196 128;
-  --c-accent-fg: 17 24 39;
-  --c-accent-soft: 255 233 201;
-  --radius: 4px;
+/* Cartoon — neobrutalist house style (cream/amber light, charcoal dark;
+   thick ink borders, hard offset shadows). Tokens from the personal
+   html-house-style skill. --nb-shadow/--nb-red drive the chrome rules below. */
+[data-theme="cartoon-light"] {
+  --c-bg: 255 253 248;        /* #FFFDF8 page */
+  --c-surface: 250 250 250;   /* #FAFAFA card */
+  --c-surface-2: 255 244 218; /* #FFF4DA input */
+  --c-fg: 17 24 39;           /* #111827 ink */
+  --c-muted: 75 85 99;        /* #4B5563 */
+  --c-border: 17 24 39;       /* #111827 line */
+  --c-accent: 255 196 128;    /* #FFC480 */
+  --c-accent-fg: 17 24 39;    /* on-accent — dark in BOTH themes */
+  --c-accent-soft: 255 244 218;
+  --radius: 8px;
+  --nb-shadow: 17 24 39;
+  --nb-red: 254 74 96;        /* #FE4A60 */
+}
+
+[data-theme="cartoon-dark"] {
+  --c-bg: 23 22 27;           /* #17161B page */
+  --c-surface: 35 33 40;      /* #232128 card */
+  --c-surface-2: 43 41 50;    /* #2B2932 panel */
+  --c-fg: 242 239 233;        /* #F2EFE9 ink */
+  --c-muted: 163 158 149;     /* #A39E95 */
+  --c-border: 0 0 0;          /* #000000 line */
+  --c-accent: 255 196 128;    /* #FFC480 */
+  --c-accent-fg: 17 24 39;    /* on-accent — dark in BOTH themes */
+  --c-accent-soft: 58 48 31;  /* #3A301F */
+  --radius: 8px;
+  --nb-shadow: 0 0 0;
+  --nb-red: 255 107 122;      /* #FF6B7A */
 }
 
 body {
@@ -61,36 +79,42 @@ body {
 /* Neo-brutalist chrome: every control that already draws a border gets thick
    ink + a hard shadow, with the gitingest press-down hover. Borderless icon
    buttons are left alone (they'd look too heavy). */
-[data-theme="cartoon"] button[class*="border"],
-[data-theme="cartoon"] input[type="text"],
-[data-theme="cartoon"] input[type="search"],
-[data-theme="cartoon"] select,
-[data-theme="cartoon"] textarea {
+[data-theme^="cartoon"] button[class*="border"],
+[data-theme^="cartoon"] input[type="text"],
+[data-theme^="cartoon"] input[type="search"],
+[data-theme^="cartoon"] select,
+[data-theme^="cartoon"] textarea {
   border-width: 2px;
-  border-color: rgb(17 24 39);
-  box-shadow: 2px 2px 0 rgb(17 24 39);
+  border-color: rgb(var(--c-border));
+  box-shadow: 2px 2px 0 rgb(var(--nb-shadow));
 }
-[data-theme="cartoon"] button[class*="border"]:hover {
+[data-theme^="cartoon"] button[class*="border"]:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 rgb(17 24 39);
+  box-shadow: 3px 3px 0 rgb(var(--nb-shadow));
 }
-[data-theme="cartoon"] button[class*="border"]:active {
+[data-theme^="cartoon"] button[class*="border"]:active {
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 rgb(17 24 39);
+  box-shadow: 1px 1px 0 rgb(var(--nb-shadow));
 }
 /* Modal / floating cards (all use shadow-xl today) get the big offset shadow. */
-[data-theme="cartoon"] .shadow-xl {
-  border: 3px solid rgb(17 24 39);
-  box-shadow: 6px 6px 0 rgb(17 24 39);
+[data-theme^="cartoon"] .shadow-xl {
+  border: 3px solid rgb(var(--c-border));
+  box-shadow: 6px 6px 0 rgb(var(--nb-shadow));
 }
-/* The pale orange accent works as a BACKGROUND (with ink text) but is
-   unreadable as text/border color on cream. Remap those usages to the
-   gitingest coral + ink. */
-[data-theme="cartoon"] .text-accent {
-  color: rgb(254 74 96);
+/* The pale amber accent works as a BACKGROUND (with ink text) but is
+   unreadable as text/border color on the page. Remap those usages to the
+   house-style red + ink. */
+[data-theme^="cartoon"] .text-accent {
+  color: rgb(var(--nb-red));
 }
-[data-theme="cartoon"] .border-accent {
-  border-color: rgb(17 24 39);
+[data-theme^="cartoon"] .border-accent {
+  border-color: rgb(var(--c-border));
+}
+/* House-style default reading font for the cartoon themes: Latin → Inter,
+   Thai falls through to Noto Sans Thai. A font picked in Settings → Fonts
+   overrides this via the article's inline style. */
+[data-theme^="cartoon"] .prose-md {
+  font-family: 'Inter', 'Noto Sans Thai', system-ui, sans-serif;
 }
 
 /* Bundled reading font (Settings → Fonts). Full Noto Sans Thai variable font —
@@ -98,6 +122,15 @@ body {
 @font-face {
   font-family: 'Noto Sans Thai';
   src: url('/fonts/NotoSansThai-Variable.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Bundled Inter variable font — the cartoon themes' default reading font
+   (house style: 'Inter','Noto Sans Thai',system-ui). Works offline. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Variable.ttf') format('truetype-variations');
   font-weight: 100 900;
   font-display: swap;
 }

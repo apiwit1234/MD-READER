@@ -491,23 +491,32 @@ ipcMain.on('fs:search:cancel', (_e, sessionId) => {
   }
 });
 
-// Theme or UI size changed in the renderer — recolor/resize the native window
-// controls and remember the color so the NEXT launch paints in-theme (no flash).
+// Theme changed in the renderer — repaint the window background and remember
+// the color so the NEXT launch paints in-theme (no flash).
 ipcMain.handle('window:setTitleBarColors', (e, payload) => {
   const color = payload && typeof payload.color === 'string' ? payload.color : '';
   if (!/^#[0-9a-fA-F]{6}$/.test(color)) return false;
-  const height = payload && Number.isInteger(payload.height) && payload.height >= 24 && payload.height <= 64
-    ? payload.height
-    : titleBarHeightFor(getSettingsStore().read().uiSize);
   const win = BrowserWindow.fromWebContents(e.sender);
   if (!win || win.isDestroyed()) return false;
-  try {
-    win.setTitleBarOverlay(titleBarOverlayFor(color, height));
-    win.setBackgroundColor(color);
-  } catch {}
+  try { win.setBackgroundColor(color); } catch {}
   getSettingsStore().write({ windowBackground: color });
   return true;
 });
+
+// Custom macOS-style window controls (frameless window).
+function senderWindow(e) {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  return win && !win.isDestroyed() ? win : null;
+}
+ipcMain.handle('window:minimize', (e) => { senderWindow(e)?.minimize(); return true; });
+ipcMain.handle('window:maximizeToggle', (e) => {
+  const win = senderWindow(e);
+  if (!win) return false;
+  if (win.isMaximized()) win.unmaximize();
+  else win.maximize();
+  return true;
+});
+ipcMain.handle('window:close', (e) => { senderWindow(e)?.close(); return true; });
 
 // Spawn a new browser window, optionally seeded with an initial tab/folder.
 ipcMain.handle('window:spawn', async (_e, opts) => {
@@ -600,28 +609,6 @@ function nextSpawnedWindowId() {
   return 'w-' + Math.random().toString(36).slice(2, 10);
 }
 
-// The app header row doubles as the title bar (titleBarStyle: 'hidden').
-// Its height is h-10 = 2.5rem, which scales with the UI size setting —
-// the native overlay strip must match: 14px*2.5 / 16px*2.5 / 18px*2.5.
-const TITLEBAR_HEIGHT_BY_UI_SIZE = { small: 35, medium: 40, large: 45 };
-
-function titleBarHeightFor(uiSize) {
-  return TITLEBAR_HEIGHT_BY_UI_SIZE[uiSize] || TITLEBAR_HEIGHT_BY_UI_SIZE.medium;
-}
-
-// Window-control glyph color readable against the given background.
-function symbolColorFor(bgHex) {
-  const r = parseInt(bgHex.slice(1, 3), 16);
-  const g = parseInt(bgHex.slice(3, 5), 16);
-  const b = parseInt(bgHex.slice(5, 7), 16);
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance < 140 ? '#f1f5f9' : '#0f172a';
-}
-
-function titleBarOverlayFor(bgHex, height) {
-  return { color: bgHex, symbolColor: symbolColorFor(bgHex), height };
-}
-
 async function createWindow(opts = {}) {
   const { windowId = 'main', x, y, width, height, initial } = opts;
   const isMain = windowId === 'main';
@@ -641,8 +628,9 @@ async function createWindow(opts = {}) {
     x: x ?? restored?.x,
     y: y ?? restored?.y,
     backgroundColor: themedBg || '#ffffff',
+    // Frameless with the app header as the title bar. Window controls are
+    // custom macOS-style buttons in the renderer (window:minimize etc.).
     titleBarStyle: 'hidden',
-    titleBarOverlay: titleBarOverlayFor(themedBg || '#f8fafc', titleBarHeightFor(startupSettings.uiSize)),
     autoHideMenuBar: true,
     // Packaged builds get the icon from the exe (electron-builder embeds
     // build/icon.png); dev needs it set explicitly to show in the taskbar.

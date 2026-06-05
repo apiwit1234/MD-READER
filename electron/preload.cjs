@@ -72,7 +72,10 @@ contextBridge.exposeInMainWorld('mdreader', {
   },
   window: {
     spawn: (opts) => ipcRenderer.invoke('window:spawn', opts),
-    setTitleBarColors: (color, height) => ipcRenderer.invoke('window:setTitleBarColors', { color, height }),
+    setTitleBarColors: (color) => ipcRenderer.invoke('window:setTitleBarColors', { color }),
+    minimize: () => ipcRenderer.invoke('window:minimize'),
+    maximizeToggle: () => ipcRenderer.invoke('window:maximizeToggle'),
+    close: () => ipcRenderer.invoke('window:close'),
   },
   clipboard: {
     saveImage: () => ipcRenderer.invoke('clipboard:saveImage'),
