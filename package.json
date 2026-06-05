@@ -1,6 +1,6 @@
 {
   "name": "md-reader",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "Personal markdown reader desktop app with multi-folder navigation, interactive mermaid, terminal, and resizable panels.",
   "author": "apiwit.wic",
