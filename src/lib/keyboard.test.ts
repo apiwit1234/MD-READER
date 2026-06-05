@@ -46,6 +46,45 @@ describe('keyboard router', () => {
   });
 });
 
+describe('installGlobalKeyboard zoom shortcuts', () => {
+  it('Ctrl+= / Ctrl+- / Ctrl+0 drive zoom callbacks', () => {
+    const onZoom = vi.fn();
+    const onZoomReset = vi.fn();
+    const off = installGlobalKeyboard({
+      onOpenFind: () => {},
+      onOpenGlobalSearch: () => {},
+      onZoom,
+      onZoomReset,
+    });
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '=', ctrlKey: true, cancelable: true }));
+    expect(onZoom).toHaveBeenLastCalledWith(1);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '+', ctrlKey: true, cancelable: true }));
+    expect(onZoom).toHaveBeenLastCalledWith(1);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '-', ctrlKey: true, cancelable: true }));
+    expect(onZoom).toHaveBeenLastCalledWith(-1);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '0', ctrlKey: true, cancelable: true }));
+    expect(onZoomReset).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('plain = / - / 0 do nothing', () => {
+    const onZoom = vi.fn();
+    const onZoomReset = vi.fn();
+    const off = installGlobalKeyboard({
+      onOpenFind: () => {},
+      onOpenGlobalSearch: () => {},
+      onZoom,
+      onZoomReset,
+    });
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '=' }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '-' }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '0' }));
+    expect(onZoom).not.toHaveBeenCalled();
+    expect(onZoomReset).not.toHaveBeenCalled();
+    off();
+  });
+});
+
 describe('installGlobalKeyboard mode shortcuts', () => {
   it('invokes onSetMode for Ctrl+2', () => {
     const onSetMode = vi.fn();

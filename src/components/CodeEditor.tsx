@@ -81,5 +81,14 @@ export function CodeEditor({ path, value, theme, onChange, onSave }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, theme]);
 
-  return <div ref={hostRef} className="h-full overflow-auto text-sm" data-testid="code-editor" />;
+  // Content is pinned to px (immune to the chrome UI-size scale) and follows
+  // the content zoom variable, like MarkdownView. 13px ≈ the old text-sm.
+  return (
+    <div
+      ref={hostRef}
+      className="h-full overflow-auto"
+      style={{ fontSize: 'calc(13px * var(--content-zoom, 1))' }}
+      data-testid="code-editor"
+    />
+  );
 }

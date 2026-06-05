@@ -22,6 +22,7 @@ import { BottomPanel } from '@/components/BottomPanel';
 import { SearchPanel, type OpenResultArg } from '@/components/SearchPanel';
 import { SearchModal } from '@/components/SearchModal';
 import { installGlobalKeyboard } from '@/lib/keyboard';
+import { applyZoomStep } from '@/lib/zoom';
 import { flagFromPanelEvent } from '@/lib/panel-sync';
 import { reloadAction, isUnderRoot, type BufferState } from '@/lib/live-reload';
 import { revealFile } from '@/lib/sidebar-events';
@@ -122,6 +123,45 @@ export default function Page() {
     root.classList.toggle('ui-small', size === 'small');
     root.classList.toggle('ui-large', size === 'large');
   }, [appSettings]);
+
+  // Content zoom — drives --content-zoom (markdown + code); the terminal
+  // follows via TerminalPanel's contentZoom prop.
+  useEffect(() => {
+    const z = (appSettings?.contentZoom ?? 100) / 100;
+    document.documentElement.style.setProperty('--content-zoom', String(z));
+  }, [appSettings]);
+
+  const changeZoom = useCallback((direction: 1 | -1) => {
+    const current = appSettingsRef.current?.contentZoom ?? 100;
+    const next = applyZoomStep(current, direction);
+    if (next === current) return;
+    updateSettings({ contentZoom: next });
+    showToast(`Zoom ${next}%`);
+  }, [updateSettings]);
+
+  const resetZoom = useCallback(() => {
+    if ((appSettingsRef.current?.contentZoom ?? 100) === 100) return;
+    updateSettings({ contentZoom: 100 });
+    showToast('Zoom 100%');
+  }, [updateSettings]);
+
+  // Stable refs so the mount-only listeners below always call the latest logic.
+  const changeZoomRef = useRef(changeZoom);
+  const resetZoomRef = useRef(resetZoom);
+  useEffect(() => { changeZoomRef.current = changeZoom; resetZoomRef.current = resetZoom; }, [changeZoom, resetZoom]);
+
+  // Ctrl+wheel over the reading content or terminal — like Chrome.
+  useEffect(() => {
+    function onWheel(e: WheelEvent) {
+      if (!e.ctrlKey) return;
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('[data-zoom-zone]')) return;
+      e.preventDefault();
+      changeZoomRef.current(e.deltaY < 0 ? 1 : -1);
+    }
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
+  }, []);
 
   const [bottomPanel, setBottomPanel] = useState<BottomPanelState>({ open: false, activeTab: 'terminal' });
   const [mode, setMode] = useState<Mode>('md');
@@ -477,6 +517,8 @@ export default function Page() {
       onOpenGlobalSearch: () => setSearchModalOpen(true),
       onSetMode: (m) => changeMode(m),
       getMode: () => modeRef.current,
+      onZoom: (d) => changeZoomRef.current(d),
+      onZoomReset: () => resetZoomRef.current(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1193,7 +1235,7 @@ export default function Page() {
           <Panel defaultSize={80} minSize={30} className="overflow-hidden">
             <PanelGroup direction="vertical" autoSaveId={`mdreader.layout.v.v3.${getWindowContext().windowId}`}>
               <Panel ref={topContentPanelRef} defaultSize={65} minSize={25} collapsible collapsedSize={0} className="overflow-hidden">
-                <main className="relative flex h-full min-w-0 flex-col bg-bg">
+                <main className="relative flex h-full min-w-0 flex-col bg-bg" data-zoom-zone>
                   {modeSwitching && (
                     <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-bg/60 backdrop-blur-[1px]">
                       <svg className="h-6 w-6 animate-spin text-accent" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -1338,6 +1380,7 @@ export default function Page() {
                       <TerminalPanel
                         theme={state.theme}
                         visible={bottomPanel.open && bottomPanel.activeTab === 'terminal'}
+                        contentZoom={appSettings?.contentZoom ?? 100}
                         onReady={(h) => { terminalHandleRef.current = h; }}
                       />
                     ) : null

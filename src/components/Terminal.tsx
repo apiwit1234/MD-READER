@@ -17,9 +17,11 @@ type Props = {
   onActivity?: (bytes: number) => void;
   /** Called when the user types/pastes into the terminal (used to distinguish echo from process output). */
   onInput?: () => void;
+  /** Terminal text size in px (content zoom). Defaults to 13. */
+  fontSize?: number;
 };
 
-export function Terminal({ sessionId, theme, visible, onPtyReady, onActivity, onInput }: Props) {
+export function Terminal({ sessionId, theme, visible, onPtyReady, onActivity, onInput, fontSize }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -28,6 +30,9 @@ export function Terminal({ sessionId, theme, visible, onPtyReady, onActivity, on
   const onActivityRef = useRef(onActivity);
   const onInputRef = useRef(onInput);
   useEffect(() => { onActivityRef.current = onActivity; onInputRef.current = onInput; });
+  // Read at init time without making fontSize an init dependency.
+  const fontSizeRef = useRef(fontSize ?? 13);
+  fontSizeRef.current = fontSize ?? 13;
 
   // One-time init per session — xterm and PTY survive theme/visibility toggles.
   useEffect(() => {
@@ -35,7 +40,7 @@ export function Terminal({ sessionId, theme, visible, onPtyReady, onActivity, on
     let disposed = false;
     const term = new XTerm({
       fontFamily: 'Consolas, "Cascadia Code", ui-monospace, monospace',
-      fontSize: 13,
+      fontSize: fontSizeRef.current,
       cursorBlink: true,
       scrollback: 5000,
       theme: terminalThemes[theme],
@@ -143,6 +148,18 @@ export function Terminal({ sessionId, theme, visible, onPtyReady, onActivity, on
   useEffect(() => {
     if (xtermRef.current) xtermRef.current.options.theme = terminalThemes[theme];
   }, [theme]);
+
+  // Live-resize terminal text when the content zoom changes — never reinit.
+  useEffect(() => {
+    const term = xtermRef.current;
+    if (!term) return;
+    term.options.fontSize = fontSize ?? 13;
+    try {
+      fitRef.current?.fit();
+      const id = ptyIdRef.current;
+      if (id != null) void getApi().term.resize(id, term.cols, term.rows);
+    } catch {}
+  }, [fontSize]);
 
   // Refit when becoming visible (xterm doesn't size correctly while display:none).
   useEffect(() => {
