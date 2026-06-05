@@ -7,8 +7,8 @@ out/
 
 # Electron / electron-builder output
 dist/
-build/
-# ...but build/ also holds electron-builder BUILD RESOURCES (committed):
+# build/ holds electron-builder BUILD RESOURCES (icon committed, rest ignored)
+build/*
 !build/icon.png
 release/
 bin/
