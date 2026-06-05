@@ -14,7 +14,7 @@ const CATEGORIES: { id: SettingsCategory; label: string; icon: string }[] = [
   { id: 'appearance', label: 'Appearance', icon: '🎨' },
   { id: 'fonts', label: 'Fonts', icon: '🔤' },
   { id: 'behavior', label: 'Behavior', icon: '🖱️' },
-  { id: 'updates', label: 'Updates', icon: '⟳' },
+  { id: 'updates', label: 'Updates', icon: '🔄' },
   { id: 'advanced', label: 'Advanced', icon: '🛠️' },
 ];
 

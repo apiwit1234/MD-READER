@@ -491,14 +491,18 @@ ipcMain.on('fs:search:cancel', (_e, sessionId) => {
   }
 });
 
-// Theme changed in the renderer — recolor the native window controls and
-// remember the color so the NEXT launch paints the window in-theme (no flash).
-ipcMain.handle('window:setTitleBarColors', (e, color) => {
-  if (typeof color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(color)) return false;
+// Theme or UI size changed in the renderer — recolor/resize the native window
+// controls and remember the color so the NEXT launch paints in-theme (no flash).
+ipcMain.handle('window:setTitleBarColors', (e, payload) => {
+  const color = payload && typeof payload.color === 'string' ? payload.color : '';
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) return false;
+  const height = payload && Number.isInteger(payload.height) && payload.height >= 24 && payload.height <= 64
+    ? payload.height
+    : titleBarHeightFor(getSettingsStore().read().uiSize);
   const win = BrowserWindow.fromWebContents(e.sender);
   if (!win || win.isDestroyed()) return false;
   try {
-    win.setTitleBarOverlay(titleBarOverlayFor(color));
+    win.setTitleBarOverlay(titleBarOverlayFor(color, height));
     win.setBackgroundColor(color);
   } catch {}
   getSettingsStore().write({ windowBackground: color });
@@ -597,8 +601,13 @@ function nextSpawnedWindowId() {
 }
 
 // The app header row doubles as the title bar (titleBarStyle: 'hidden').
-// Its h-10 (40px) height must match the native overlay button strip.
-const TITLEBAR_HEIGHT = 40;
+// Its height is h-10 = 2.5rem, which scales with the UI size setting —
+// the native overlay strip must match: 14px*2.5 / 16px*2.5 / 18px*2.5.
+const TITLEBAR_HEIGHT_BY_UI_SIZE = { small: 35, medium: 40, large: 45 };
+
+function titleBarHeightFor(uiSize) {
+  return TITLEBAR_HEIGHT_BY_UI_SIZE[uiSize] || TITLEBAR_HEIGHT_BY_UI_SIZE.medium;
+}
 
 // Window-control glyph color readable against the given background.
 function symbolColorFor(bgHex) {
@@ -609,8 +618,8 @@ function symbolColorFor(bgHex) {
   return luminance < 140 ? '#f1f5f9' : '#0f172a';
 }
 
-function titleBarOverlayFor(bgHex) {
-  return { color: bgHex, symbolColor: symbolColorFor(bgHex), height: TITLEBAR_HEIGHT };
+function titleBarOverlayFor(bgHex, height) {
+  return { color: bgHex, symbolColor: symbolColorFor(bgHex), height };
 }
 
 async function createWindow(opts = {}) {
@@ -623,7 +632,8 @@ async function createWindow(opts = {}) {
   const restored = isMain ? await readWindowState() : null;
 
   // Paint the window in the last-used theme color from the first frame.
-  const themedBg = getSettingsStore().read().windowBackground;
+  const startupSettings = getSettingsStore().read();
+  const themedBg = startupSettings.windowBackground;
 
   const win = new BrowserWindow({
     width: width ?? restored?.width ?? 1400,
@@ -632,7 +642,7 @@ async function createWindow(opts = {}) {
     y: y ?? restored?.y,
     backgroundColor: themedBg || '#ffffff',
     titleBarStyle: 'hidden',
-    titleBarOverlay: titleBarOverlayFor(themedBg || '#f8fafc'),
+    titleBarOverlay: titleBarOverlayFor(themedBg || '#f8fafc', titleBarHeightFor(startupSettings.uiSize)),
     autoHideMenuBar: true,
     // Packaged builds get the icon from the exe (electron-builder embeds
     // build/icon.png); dev needs it set explicitly to show in the taskbar.
@@ -643,7 +653,7 @@ async function createWindow(opts = {}) {
       sandbox: false,
       nodeIntegration: false,
     },
-    title: 'MD Reader',
+    title: 'PAX Reader',
   });
 
   if (isMain && restored?.maximized) win.maximize();

@@ -62,7 +62,7 @@ export function AppearanceSection({ theme, favorites, onSelectTheme, onSetFavori
       <div className="flex gap-2.5">
         {([0, 1] as const).map((slot) => (
           <label key={slot} className="flex-1 rounded-theme border border-border p-2.5 text-sm">
-            <span className="block text-[10px] uppercase tracking-wide text-muted">
+            <span className="block text-[0.625rem] uppercase tracking-wide text-muted">
               {`Favorite ${slot + 1}`}
             </span>
             <select

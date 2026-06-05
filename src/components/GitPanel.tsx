@@ -27,7 +27,7 @@ export function GitPanel({ repos, activeRoot, onSelectRepo, onOpenDiff }: Props)
         </div>
       )}
       <div className="flex items-center justify-between border-b border-border px-2 py-1">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted">Source Control</span>
+        <span className="text-[0.625rem] font-semibold uppercase tracking-wide text-muted">Source Control</span>
         <button type="button" aria-label="Refresh git status" onClick={() => void git.refresh()} className="text-muted hover:text-fg">⟳</button>
       </div>
 
@@ -48,7 +48,7 @@ export function GitPanel({ repos, activeRoot, onSelectRepo, onOpenDiff }: Props)
           <ActionBtn label="Sync" onClick={() => void git.sync()} busy={git.busy} />
         </div>
         {git.lastError && (
-          <div className="max-h-24 overflow-y-auto whitespace-pre-wrap rounded bg-rose-100 px-2 py-1 text-[11px] text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
+          <div className="max-h-24 overflow-y-auto whitespace-pre-wrap rounded bg-rose-100 px-2 py-1 text-[0.6875rem] text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
             {git.lastError}
           </div>
         )}
@@ -95,7 +95,7 @@ export function GitPanel({ repos, activeRoot, onSelectRepo, onOpenDiff }: Props)
 function ActionBtn({ label, onClick, busy }: { label: string; onClick: () => void; busy: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={busy}
-      className="flex-1 rounded border border-border px-1 py-1 text-[11px] text-fg hover:bg-surface-2 disabled:opacity-40">{label}</button>
+      className="flex-1 rounded border border-border px-1 py-1 text-[0.6875rem] text-fg hover:bg-surface-2 disabled:opacity-40">{label}</button>
   );
 }
 
@@ -111,7 +111,7 @@ function Spinner() {
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="py-1">
-      <div className="px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">{title}</div>
+      <div className="px-2 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted">{title}</div>
       {children}
     </div>
   );

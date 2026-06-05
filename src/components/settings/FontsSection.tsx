@@ -39,7 +39,7 @@ export function FontsSection({ settings, onUpdateSettings, customFonts, onCustom
   function fontSelect(label: string, value: string, key: 'fontSource' | 'fontEnglish' | 'fontThai') {
     return (
       <label className="flex-1 rounded-theme border border-border p-2.5 text-sm">
-        <span className="block text-[10px] uppercase tracking-wide text-muted">{label}</span>
+        <span className="block text-[0.625rem] uppercase tracking-wide text-muted">{label}</span>
         <select
           aria-label={label}
           value={value}

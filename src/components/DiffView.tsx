@@ -11,7 +11,7 @@ export function DiffView({ unified, title }: Props) {
   }
   return (
     <div className="h-full overflow-auto font-mono text-xs">
-      <div className="sticky top-0 grid grid-cols-2 border-b border-border bg-surface text-[10px] uppercase text-muted">
+      <div className="sticky top-0 grid grid-cols-2 border-b border-border bg-surface text-[0.625rem] uppercase text-muted">
         <div className="px-2 py-1">Old</div>
         <div className="border-l border-border px-2 py-1">New</div>
       </div>

@@ -90,7 +90,7 @@ type MdReader = {
   };
   window: {
     spawn: (opts: SpawnWindowOpts) => Promise<string>;
-    setTitleBarColors: (color: string) => Promise<boolean>;
+    setTitleBarColors: (color: string, height?: number) => Promise<boolean>;
   };
   clipboard: {
     saveImage: () => Promise<string | null>;

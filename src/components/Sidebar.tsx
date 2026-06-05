@@ -191,7 +191,7 @@ export function Sidebar({
             >
               + Open folder
             </button>
-            <p className="mt-2 text-center text-[10px] text-muted">
+            <p className="mt-2 text-center text-[0.625rem] text-muted">
               or drag &amp; drop a folder or file here
             </p>
           </>
@@ -264,15 +264,15 @@ function DropProgressBanner({ progress }: { progress: DropProgress }) {
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted">
         <div>
-          <div className="text-[10px] uppercase tracking-wide">Read</div>
+          <div className="text-[0.625rem] uppercase tracking-wide">Read</div>
           <div className="font-mono text-base text-accent">{mdFilesRead}</div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wide">Scanned</div>
+          <div className="text-[0.625rem] uppercase tracking-wide">Scanned</div>
           <div className="font-mono text-base text-muted">{filesScanned + mdFilesRead}</div>
         </div>
       </div>
-      <div className="mt-1 truncate text-[10px] text-muted" title={lastPath}>
+      <div className="mt-1 truncate text-[0.625rem] text-muted" title={lastPath}>
         {lastPath || ' '}
       </div>
     </div>

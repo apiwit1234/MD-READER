@@ -123,6 +123,14 @@ body {
   transition: none;
 }
 
+/* Native <select> dropdown lists follow the theme. The closed control is
+   styled by Tailwind classes; Chromium derives the popup colors from these. */
+select,
+select option {
+  background-color: rgb(var(--c-surface));
+  color: rgb(var(--c-fg));
+}
+
 /* Themed scrollbars (app chrome + xterm viewport). */
 * {
   scrollbar-width: thin;

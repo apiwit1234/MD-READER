@@ -80,7 +80,7 @@
       "owner": "apiwit1234",
       "repo": "MD-READER"
     },
-    "productName": "MD Reader",
+    "productName": "PAX Reader",
     "directories": {
       "output": "release"
     },
@@ -122,10 +122,10 @@
           ]
         }
       ],
-      "artifactName": "MD-Reader-${version}-${arch}.${ext}"
+      "artifactName": "PAX-Reader-${version}-${arch}.${ext}"
     },
     "portable": {
-      "artifactName": "MD-Reader-${version}-${arch}-portable.${ext}"
+      "artifactName": "PAX-Reader-${version}-${arch}-portable.${ext}"
     },
     "fileAssociations": [
       {

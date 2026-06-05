@@ -479,13 +479,18 @@ export default function Page() {
     // dark prose/highlight/mermaid/find-hit), while `data-theme` drives the
     // per-theme color tokens. Also keeps not-yet-migrated `dark:` utilities working.
     root.classList.toggle('dark', themeMode(state.theme) === 'dark');
-    // Recolor the native title-bar overlay to the theme's surface color.
-    if (hasApi()) {
-      const surface = getComputedStyle(root).getPropertyValue('--c-surface');
-      const hex = rgbTripletToHex(surface);
-      if (hex) void getApi().window.setTitleBarColors(hex);
-    }
   }, [state.theme, hydrated]);
+
+  // Sync the native title-bar overlay with the theme's surface color and the
+  // UI-size header height (h-10 = 2.5rem → 35/40/45px).
+  useEffect(() => {
+    if (!hydrated || !hasApi()) return;
+    const root = document.documentElement;
+    const surface = getComputedStyle(root).getPropertyValue('--c-surface');
+    const hex = rgbTripletToHex(surface);
+    const height = { small: 35, medium: 40, large: 45 }[appSettings?.uiSize ?? 'medium'];
+    if (hex) void getApi().window.setTitleBarColors(hex, height);
+  }, [state.theme, hydrated, appSettings]);
 
   useEffect(() => {
     if ((bottomPanel.open && bottomPanel.activeTab === 'terminal') && !terminalShownOnce) setTerminalShownOnce(true);
@@ -1182,7 +1187,9 @@ export default function Page() {
         style={{ paddingRight: 'calc(100vw - env(titlebar-area-width, 100vw) - env(titlebar-area-x, 0px) + 1rem)' }}
       >
         <div className="flex items-center gap-3">
-          <h1 className="text-sm font-semibold tracking-wide text-fg">MD Reader</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.png" alt="" aria-hidden className="h-5 w-5 shrink-0" />
+          <h1 className="text-sm font-semibold tracking-wide text-fg">PAX Reader</h1>
           <ModeSwitcher mode={mode} onChange={changeMode} />
         </div>
         <div className="flex items-center gap-4">
