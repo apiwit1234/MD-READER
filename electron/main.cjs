@@ -80,6 +80,26 @@ ipcMain.handle('settings:set', (_e, patch) =>
 );
 ipcMain.handle('settings:reset', () => getSettingsStore().reset());
 
+// --- Custom reading fonts (userData/fonts) ---
+const { createFontStore } = require('./fonts.cjs');
+let fontStore = null;
+function getFontStore() {
+  if (!fontStore) fontStore = createFontStore(app.getPath('userData'));
+  return fontStore;
+}
+ipcMain.handle('fonts:list', () => getFontStore().list());
+ipcMain.handle('fonts:add', async () => {
+  const r = await dialog.showOpenDialog({
+    title: 'Add font',
+    properties: ['openFile'],
+    filters: [{ name: 'Fonts', extensions: ['ttf', 'otf', 'woff', 'woff2'] }],
+  });
+  if (r.canceled || r.filePaths.length === 0) return { ok: false, error: null };
+  return getFontStore().addFromPath(r.filePaths[0]);
+});
+ipcMain.handle('fonts:remove', (_e, id) => getFontStore().remove(typeof id === 'string' ? id : ''));
+ipcMain.handle('fonts:data', (_e, id) => getFontStore().data(typeof id === 'string' ? id : ''));
+
 // --- Auto-update (electron-updater + GitHub Releases) ---
 let updaterRef = null;
 

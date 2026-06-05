@@ -25,6 +25,8 @@ type SpawnWindowOpts = {
 
 export type UiSize = 'small' | 'medium' | 'large';
 
+export type CustomFont = { id: string; label: string };
+
 export type AppSettings = {
   autoUpdate: boolean;
   uiSize: UiSize;
@@ -97,6 +99,12 @@ type MdReader = {
     get: () => Promise<AppSettings>;
     set: (patch: Partial<AppSettings>) => Promise<AppSettings>;
     reset: () => Promise<AppSettings>;
+  };
+  fonts: {
+    list: () => Promise<CustomFont[]>;
+    add: () => Promise<{ ok: boolean; font?: CustomFont; error?: string | null }>;
+    remove: (id: string) => Promise<{ ok: boolean }>;
+    data: (id: string) => Promise<{ ok: boolean; bytes?: Uint8Array; format?: string; error?: string }>;
   };
   update: {
     check: () => Promise<{ ok: boolean; version?: string | null; error?: string }>;

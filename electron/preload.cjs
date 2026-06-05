@@ -82,6 +82,12 @@ contextBridge.exposeInMainWorld('mdreader', {
     set: (patch) => ipcRenderer.invoke('settings:set', patch),
     reset: () => ipcRenderer.invoke('settings:reset'),
   },
+  fonts: {
+    list: () => ipcRenderer.invoke('fonts:list'),
+    add: () => ipcRenderer.invoke('fonts:add'),
+    remove: (id) => ipcRenderer.invoke('fonts:remove', id),
+    data: (id) => ipcRenderer.invoke('fonts:data', id),
+  },
   update: {
     check: () => ipcRenderer.invoke('update:check'),
     install: () => ipcRenderer.invoke('update:install'),
