@@ -11,10 +11,12 @@ type Props = {
   activeRoot: string | null;
   onSelectRepo: (root: string) => void;
   onOpenDiff: (root: string, file: GitFileStatus, staged: boolean) => void;
+  /** False while the panel is collapsed — pauses focus-driven git refreshes. */
+  active?: boolean;
 };
 
-export function GitPanel({ repos, activeRoot, onSelectRepo, onOpenDiff }: Props) {
-  const git = useGitStore(activeRoot);
+export function GitPanel({ repos, activeRoot, onSelectRepo, onOpenDiff, active }: Props) {
+  const git = useGitStore(activeRoot, active ?? true);
   const files = git.status?.files ?? [];
   const { staged, unstaged, conflicts } = splitFiles(files);
 

@@ -132,11 +132,24 @@ export default function Page() {
     document.documentElement.style.setProperty('--content-zoom', String(z));
   }, [appSettings]);
 
+  // Zoom applies instantly (local state) but persists DEBOUNCED — a ctrl+wheel
+  // burst is many 10% steps and each settings.set is an IPC + disk write.
+  const zoomSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (zoomSaveTimer.current) clearTimeout(zoomSaveTimer.current); }, []);
   const changeZoom = useCallback((direction: 1 | -1) => {
     const current = appSettingsRef.current?.contentZoom ?? 100;
     const next = applyZoomStep(current, direction);
     if (next === current) return;
-    updateSettings({ contentZoom: next });
+    if (appSettingsRef.current) {
+      setAppSettings({ ...appSettingsRef.current, contentZoom: next });
+      if (zoomSaveTimer.current) clearTimeout(zoomSaveTimer.current);
+      zoomSaveTimer.current = setTimeout(() => {
+        zoomSaveTimer.current = null;
+        updateSettings({ contentZoom: next });
+      }, 350);
+    } else {
+      updateSettings({ contentZoom: next });
+    }
     showToast(`Zoom ${next}%`);
   }, [updateSettings]);
 
@@ -1271,6 +1284,7 @@ export default function Page() {
                   activeRoot={activeRepoRoot}
                   onSelectRepo={setActiveRepoRoot}
                   onOpenDiff={openDiffTab}
+                  active={viewFlags.git}
                 />
               }
               gitVisible={viewFlags.git}
