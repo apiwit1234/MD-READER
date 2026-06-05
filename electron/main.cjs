@@ -471,6 +471,20 @@ ipcMain.on('fs:search:cancel', (_e, sessionId) => {
   }
 });
 
+// Theme changed in the renderer — recolor the native window controls and
+// remember the color so the NEXT launch paints the window in-theme (no flash).
+ipcMain.handle('window:setTitleBarColors', (e, color) => {
+  if (typeof color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(color)) return false;
+  const win = BrowserWindow.fromWebContents(e.sender);
+  if (!win || win.isDestroyed()) return false;
+  try {
+    win.setTitleBarOverlay(titleBarOverlayFor(color));
+    win.setBackgroundColor(color);
+  } catch {}
+  getSettingsStore().write({ windowBackground: color });
+  return true;
+});
+
 // Spawn a new browser window, optionally seeded with an initial tab/folder.
 ipcMain.handle('window:spawn', async (_e, opts) => {
   const windowId = nextSpawnedWindowId();
@@ -562,6 +576,23 @@ function nextSpawnedWindowId() {
   return 'w-' + Math.random().toString(36).slice(2, 10);
 }
 
+// The app header row doubles as the title bar (titleBarStyle: 'hidden').
+// Its h-10 (40px) height must match the native overlay button strip.
+const TITLEBAR_HEIGHT = 40;
+
+// Window-control glyph color readable against the given background.
+function symbolColorFor(bgHex) {
+  const r = parseInt(bgHex.slice(1, 3), 16);
+  const g = parseInt(bgHex.slice(3, 5), 16);
+  const b = parseInt(bgHex.slice(5, 7), 16);
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance < 140 ? '#f1f5f9' : '#0f172a';
+}
+
+function titleBarOverlayFor(bgHex) {
+  return { color: bgHex, symbolColor: symbolColorFor(bgHex), height: TITLEBAR_HEIGHT };
+}
+
 async function createWindow(opts = {}) {
   const { windowId = 'main', x, y, width, height, initial } = opts;
   const isMain = windowId === 'main';
@@ -571,12 +602,17 @@ async function createWindow(opts = {}) {
   // Only the "main" window restores last-session bounds.
   const restored = isMain ? await readWindowState() : null;
 
+  // Paint the window in the last-used theme color from the first frame.
+  const themedBg = getSettingsStore().read().windowBackground;
+
   const win = new BrowserWindow({
     width: width ?? restored?.width ?? 1400,
     height: height ?? restored?.height ?? 900,
     x: x ?? restored?.x,
     y: y ?? restored?.y,
-    backgroundColor: '#ffffff',
+    backgroundColor: themedBg || '#ffffff',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: titleBarOverlayFor(themedBg || '#f8fafc'),
     autoHideMenuBar: true,
     // Packaged builds get the icon from the exe (electron-builder embeds
     // build/icon.png); dev needs it set explicitly to show in the taskbar.

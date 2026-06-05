@@ -11,7 +11,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsModal } from '@/components/SettingsModal';
 import { themeMode } from '@/lib/themes';
 import { loadState, saveState, defaultState, clearedState, saveSearchState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
-import { pickNextColor } from '@/lib/colors';
+import { pickNextColor, rgbTripletToHex } from '@/lib/colors';
 import { getApi, hasApi, type SpawnWindowInitial, type AppSettings } from '@/lib/electron-api';
 import { getWindowContext, withWindowSuffix } from '@/lib/window-context';
 import type { DropResult } from '@/lib/drop';
@@ -387,6 +387,12 @@ export default function Page() {
     // dark prose/highlight/mermaid/find-hit), while `data-theme` drives the
     // per-theme color tokens. Also keeps not-yet-migrated `dark:` utilities working.
     root.classList.toggle('dark', themeMode(state.theme) === 'dark');
+    // Recolor the native title-bar overlay to the theme's surface color.
+    if (hasApi()) {
+      const surface = getComputedStyle(root).getPropertyValue('--c-surface');
+      const hex = rgbTripletToHex(surface);
+      if (hex) void getApi().window.setTitleBarColors(hex);
+    }
   }, [state.theme, hydrated]);
 
   useEffect(() => {
@@ -1068,7 +1074,10 @@ export default function Page() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-2">
+      <header
+        className="titlebar-drag flex h-10 shrink-0 items-center justify-between border-b border-border bg-surface px-4"
+        style={{ paddingRight: 'calc(100vw - env(titlebar-area-width, 100vw) - env(titlebar-area-x, 0px) + 1rem)' }}
+      >
         <div className="flex items-center gap-3">
           <h1 className="text-sm font-semibold tracking-wide text-fg">MD Reader</h1>
           <ModeSwitcher mode={mode} onChange={changeMode} />

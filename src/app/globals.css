@@ -86,6 +86,18 @@ body {
   border-color: rgb(17 24 39);
 }
 
+/* Custom title bar: the app header doubles as the native title bar.
+   Interactive children must opt out of dragging or they become unclickable. */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+.titlebar-drag button,
+.titlebar-drag input,
+.titlebar-drag select,
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
+
 /* Smooth programmatic panel open/close (toggles). Disabled while a resize
    handle is being dragged so resizing stays 1:1 with the pointer. */
 [data-panel] {
