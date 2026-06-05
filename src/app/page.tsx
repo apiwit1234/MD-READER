@@ -1535,14 +1535,16 @@ export default function Page() {
  *  Glyphs appear on hover of the group, like macOS. Close stays in the
  *  top-right corner (Windows muscle memory); colors follow macOS. */
 function WindowControls() {
-  const btn = 'flex h-3.5 w-3.5 items-center justify-center rounded-full text-[0px] font-bold leading-none text-black/60 ring-1 ring-black/15 transition-colors group-hover:text-[0.5625rem]';
+  // .window-control / .wc-* let the cartoon themes restyle these to the
+  // neobrutalist house palette (see globals.css).
+  const btn = 'window-control flex h-3.5 w-3.5 items-center justify-center rounded-full text-[0px] font-bold leading-none text-black/60 ring-1 ring-black/15 transition-colors group-hover:text-[0.5625rem]';
   return (
     <div className="group titlebar-no-drag ml-1 flex shrink-0 items-center gap-2" aria-label="Window controls">
       <button
         type="button"
         aria-label="Minimize window"
         onClick={() => { void getApi().window.minimize(); }}
-        className={`${btn} bg-[#FEBC2E] hover:bg-[#f5b525]`}
+        className={`${btn} wc-min bg-[#FEBC2E]`}
       >
         −
       </button>
@@ -1550,7 +1552,7 @@ function WindowControls() {
         type="button"
         aria-label="Maximize or restore window"
         onClick={() => { void getApi().window.maximizeToggle(); }}
-        className={`${btn} bg-[#28C840] hover:bg-[#24b53a]`}
+        className={`${btn} wc-max bg-[#28C840]`}
       >
         +
       </button>
@@ -1558,7 +1560,7 @@ function WindowControls() {
         type="button"
         aria-label="Close window"
         onClick={() => { void getApi().window.close(); }}
-        className={`${btn} bg-[#FF5F57] hover:bg-[#f0524a]`}
+        className={`${btn} wc-close bg-[#FF5F57]`}
       >
         ✕
       </button>

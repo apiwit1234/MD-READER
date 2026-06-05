@@ -55,6 +55,7 @@ html.ui-large { font-size: 18px; }
   --radius: 8px;
   --nb-shadow: 17 24 39;
   --nb-red: 254 74 96;        /* #FE4A60 */
+  --nb-good: 31 122 77;       /* #1F7A4D */
 }
 
 [data-theme="cartoon-dark"] {
@@ -70,6 +71,7 @@ html.ui-large { font-size: 18px; }
   --radius: 8px;
   --nb-shadow: 0 0 0;
   --nb-red: 255 107 122;      /* #FF6B7A */
+  --nb-good: 95 208 138;      /* #5FD08A */
 }
 
 body {
@@ -116,6 +118,26 @@ body {
 [data-theme^="cartoon"] .prose-md {
   font-family: 'Inter', 'Noto Sans Thai', system-ui, sans-serif;
 }
+/* Window controls take the neobrutalist treatment in cartoon themes:
+   house palette (amber/green/red), ink border, hard offset shadow,
+   press-down hover — matching every other cartoon button. */
+[data-theme^="cartoon"] .window-control {
+  border: 2px solid rgb(var(--c-border));
+  box-shadow: 1px 1px 0 rgb(var(--nb-shadow));
+  color: rgb(17 24 39 / 0.75);
+  transition: transform 0.1s, box-shadow 0.1s, font-size 0.1s;
+}
+[data-theme^="cartoon"] .window-control:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0 rgb(var(--nb-shadow));
+}
+[data-theme^="cartoon"] .window-control:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+[data-theme^="cartoon"] .wc-min { background: rgb(var(--c-accent)); }
+[data-theme^="cartoon"] .wc-max { background: rgb(var(--nb-good)); }
+[data-theme^="cartoon"] .wc-close { background: rgb(var(--nb-red)); }
 
 /* Bundled reading font (Settings → Fonts). Full Noto Sans Thai variable font —
    covers Thai AND Latin, works offline. */
