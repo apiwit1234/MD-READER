@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { loadState, saveState, defaultState, STORAGE_KEY } from './storage';
+import { loadState, saveState, defaultState, clearedState, STORAGE_KEY } from './storage';
+import type { AppState } from '@/types';
 import {
   loadSearchState,
   saveSearchState,
@@ -171,5 +172,35 @@ describe('mode persistence', () => {
   it('falls back to md on an invalid stored value', () => {
     localStorage.setItem('mdreader.mode.v1.main', JSON.stringify('bogus'));
     expect(loadMode()).toBe('md');
+  });
+});
+
+describe('clearedState', () => {
+  it('clears folders and tabs but keeps theme, favorites and recents', () => {
+    const prev: AppState = {
+      theme: 'dark',
+      themeFavorites: ['dark', 'cartoon'],
+      openedFolders: [{ id: 'f1', hostPath: 'C:/docs', name: 'docs', color: '#f00', expanded: true }],
+      openTabs: [{ folderId: 'f1', relativePath: 'a.md', active: true }],
+      recentFolders: [{ hostPath: 'C:/docs', lastOpenedAt: 123 }],
+    };
+    const next = clearedState(prev);
+    expect(next.openedFolders).toEqual([]);
+    expect(next.openTabs).toEqual([]);
+    expect(next.theme).toBe('dark');
+    expect(next.themeFavorites).toEqual(['dark', 'cartoon']);
+    expect(next.recentFolders).toEqual([{ hostPath: 'C:/docs', lastOpenedAt: 123 }]);
+  });
+
+  it('does not mutate the previous state', () => {
+    const prev: AppState = {
+      theme: 'light',
+      themeFavorites: ['light', 'dark'],
+      openedFolders: [{ id: 'f1', hostPath: 'C:/x', name: 'x', color: '#0f0', expanded: false }],
+      openTabs: [],
+      recentFolders: [],
+    };
+    clearedState(prev);
+    expect(prev.openedFolders).toHaveLength(1);
   });
 });

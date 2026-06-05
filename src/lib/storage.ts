@@ -20,6 +20,13 @@ export function defaultState(): AppState {
   };
 }
 
+/** Clear-all: drop workspace content but PRESERVE user preferences
+ *  (theme, favorites, recent folders). Fixes the v1.0.4 bug where Clear all
+ *  silently reset the theme to light. */
+export function clearedState(prev: AppState): AppState {
+  return { ...prev, openedFolders: [], openTabs: [] };
+}
+
 function normalizeFavorites(x: unknown): [Theme, Theme] {
   if (Array.isArray(x) && x.length === 2) {
     const a = migrateTheme(x[0]);

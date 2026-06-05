@@ -10,12 +10,14 @@ import { FolderPickerModal } from '@/components/FolderPickerModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsModal } from '@/components/SettingsModal';
 import { themeMode } from '@/lib/themes';
-import { loadState, saveState, defaultState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
+import { loadState, saveState, defaultState, clearedState, saveSearchState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
 import { pickNextColor } from '@/lib/colors';
 import { getApi, hasApi, type SpawnWindowInitial, type AppSettings } from '@/lib/electron-api';
 import { getWindowContext, withWindowSuffix } from '@/lib/window-context';
 import type { DropResult } from '@/lib/drop';
 import type { AppState, OpenedFolder, Theme, BottomPanelState, SearchResponse } from '@/types';
+import { DEFAULT_SEARCH_STATE, DEFAULT_BOTTOM_PANEL_STATE } from '@/types';
+import type { TerminalPanelHandle } from '@/components/TerminalPanel';
 import { BottomPanel } from '@/components/BottomPanel';
 import { SearchPanel, type OpenResultArg } from '@/components/SearchPanel';
 import { SearchModal } from '@/components/SearchModal';
@@ -128,8 +130,8 @@ export default function Page() {
   const bottomPanelRef = useRef<ImperativePanelHandle>(null);
   const sidebarPanelRef = useRef<ImperativePanelHandle>(null);
   const topContentPanelRef = useRef<ImperativePanelHandle>(null);
-  // Handle for the TerminalPanel component to type into its active terminal.
-  const terminalHandleRef = useRef<{ typeIntoActive: (text: string) => void } | null>(null);
+  // Handle for the TerminalPanel component (type into / reset terminals).
+  const terminalHandleRef = useRef<TerminalPanelHandle | null>(null);
   const contentStoreRef = useRef<ContentStore>(new ContentStore());
   // Bumped per path on external refresh; remounts CodeEditor (it ignores
   // `value` after mount by design — see CodeEditor.tsx:80).
@@ -992,10 +994,15 @@ export default function Page() {
   }
 
   function clearAll() {
-    setState({ ...defaultState() });
+    // Workspace content only — theme/favorites/settings survive (clearedState).
+    setState((s) => clearedState(s));
     setVirtualContents({});
+    setLastSearch({ query: '', caseSensitive: false, response: null });
+    saveSearchState({ ...DEFAULT_SEARCH_STATE });
+    setBottomPanel({ ...DEFAULT_BOTTOM_PANEL_STATE });
+    terminalHandleRef.current?.resetAll();
     setConfirmClear(false);
-    showToast('Cleared all folders and tabs');
+    showToast('Cleared folders, tabs, search and terminals');
   }
 
   function toggleView(key: keyof ViewFlags) {
