@@ -115,6 +115,14 @@ export default function Page() {
     void getApi().settings.set(patch).then(setAppSettings);
   }, []);
 
+  // UI size — scales chrome via the root font-size (see globals.css).
+  useEffect(() => {
+    const size = appSettings?.uiSize ?? 'medium';
+    const root = document.documentElement;
+    root.classList.toggle('ui-small', size === 'small');
+    root.classList.toggle('ui-large', size === 'large');
+  }, [appSettings]);
+
   const [bottomPanel, setBottomPanel] = useState<BottomPanelState>({ open: false, activeTab: 'terminal' });
   const [mode, setMode] = useState<Mode>('md');
   const [modeSwitching, setModeSwitching] = useState(false);

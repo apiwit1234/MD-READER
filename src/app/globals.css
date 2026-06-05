@@ -4,6 +4,13 @@
 
 html, body, #__next { height: 100%; }
 
+/* UI size (Settings → Appearance). Chrome uses rem-based Tailwind sizes, so the
+   root font-size scales every panel, tab and button. Reading content is pinned
+   to px (see MarkdownView/.prose-md) and is NOT affected. */
+html { font-size: 16px; }
+html.ui-small { font-size: 14px; }
+html.ui-large { font-size: 18px; }
+
 /* Default (pre-hydration) mirrors Light. */
 :root,
 [data-theme="light"] {
