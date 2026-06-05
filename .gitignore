@@ -8,6 +8,8 @@ out/
 # Electron / electron-builder output
 dist/
 build/
+# ...but build/ also holds electron-builder BUILD RESOURCES (committed):
+!build/icon.png
 release/
 bin/
 
