@@ -410,12 +410,17 @@ export default function Page() {
     };
   }, []);
 
-  // Show a non-blocking notice when an update has been downloaded; it installs
-  // automatically the next time the app is closed.
+  // Update lifecycle UI: a persistent header pill while an update awaits a
+  // restart, and a one-time confirmation toast on the first launch after one.
+  const [updateReady, setUpdateReady] = useState<string | null>(null);
   useEffect(() => {
     if (!hasApi()) return;
     const off = getApi().update.onUpdateReady((version) => {
-      showToast(`Update v${version} downloaded — restart MD Reader to apply`);
+      setUpdateReady(version);
+      showToast(`Update v${version} downloaded — restart MD Reader to apply`, 6000);
+    });
+    void getApi().app.versionInfo().then((info) => {
+      if (info.updatedFrom) showToast(`MD Reader updated to v${info.current} ✓`, 6000);
     });
     return () => { off(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -965,9 +970,9 @@ export default function Page() {
     showToast('Pasted into terminal');
   }
 
-  function showToast(msg: string) {
+  function showToast(msg: string, durationMs = 1500) {
     setToast(msg);
-    setTimeout(() => setToast(null), 1500);
+    setTimeout(() => setToast(null), durationMs);
   }
 
   function clearAll() {
@@ -1046,6 +1051,16 @@ export default function Page() {
           <ModeSwitcher mode={mode} onChange={changeMode} />
         </div>
         <div className="flex items-center gap-4">
+          {updateReady && (
+            <button
+              type="button"
+              onClick={() => { void getApi().update.install(); }}
+              title={`Restart now to update to v${updateReady}`}
+              className="flex shrink-0 items-center gap-1 rounded-full border border-accent bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent hover:text-accent-fg"
+            >
+              ⟳ Update ready — restart
+            </button>
+          )}
           {mode !== 'terminal' && ViewToggles}
           <button
             type="button"

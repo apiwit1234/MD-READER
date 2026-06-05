@@ -107,6 +107,28 @@ function initAutoUpdate() {
   }
 }
 
+// Restart immediately and apply a downloaded update (header pill click).
+ipcMain.handle('update:install', () => {
+  if (!updaterRef) return false;
+  try {
+    updaterRef.quitAndInstall();
+    return true;
+  } catch (err) {
+    appendLog('autoUpdate', String((err && err.stack) || err));
+    return false;
+  }
+});
+
+// Tells the renderer (once per version change) that the app was just updated,
+// so it can show an "updated to vX" confirmation after the silent install.
+ipcMain.handle('app:versionInfo', () => {
+  const store = getSettingsStore();
+  const lastRun = store.read().lastRunVersion;
+  const current = app.getVersion();
+  if (lastRun !== current) store.write({ lastRunVersion: current });
+  return { current, updatedFrom: lastRun && lastRun !== current ? lastRun : null };
+});
+
 ipcMain.handle('update:check', async () => {
   if (!app.isPackaged) return { ok: false, error: 'dev build — updates only work in the installed app' };
   if (!updaterRef) return { ok: false, error: 'updater unavailable' };
@@ -555,6 +577,9 @@ async function createWindow(opts = {}) {
     y: y ?? restored?.y,
     backgroundColor: '#ffffff',
     autoHideMenuBar: true,
+    // Packaged builds get the icon from the exe (electron-builder embeds
+    // build/icon.png); dev needs it set explicitly to show in the taskbar.
+    icon: app.isPackaged ? undefined : path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

@@ -16,9 +16,13 @@ type Props = {
 export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, onSetFavorites }: Props) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [checkResult, setCheckResult] = useState<string | null>(null);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open && hasApi()) void getApi().settings.get().then(setSettings);
+    if (open && hasApi()) {
+      void getApi().settings.get().then(setSettings);
+      void getApi().app.versionInfo().then((i) => setAppVersion(i.current));
+    }
     if (!open) setCheckResult(null);
   }, [open]);
 
@@ -43,7 +47,12 @@ export function SettingsModal({ open, onClose, theme, favorites, onSelectTheme, 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-base font-semibold">Settings</h3>
+          <h3 className="text-base font-semibold">
+            Settings
+            {appVersion && (
+              <span className="ml-2 align-middle text-xs font-normal text-muted" title="App version">v{appVersion}</span>
+            )}
+          </h3>
           <button
             type="button"
             onClick={onClose}

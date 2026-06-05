@@ -101,6 +101,7 @@
       "node_modules/node-pty/**/*"
     ],
     "win": {
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "nsis",
