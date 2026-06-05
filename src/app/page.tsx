@@ -1144,15 +1144,14 @@ export default function Page() {
               activeFile={activeFileForSidebar}
               markdownOnly={mode === 'md'}
               gitPanel={
-                viewFlags.git ? (
-                  <GitPanel
-                    repos={gitRepos}
-                    activeRoot={activeRepoRoot}
-                    onSelectRepo={setActiveRepoRoot}
-                    onOpenDiff={openDiffTab}
-                  />
-                ) : undefined
+                <GitPanel
+                  repos={gitRepos}
+                  activeRoot={activeRepoRoot}
+                  onSelectRepo={setActiveRepoRoot}
+                  onOpenDiff={openDiffTab}
+                />
               }
+              gitVisible={viewFlags.git}
               onGitVisibilityChange={(visible) => {
                 const next = flagFromPanelEvent(visible ? 'expand' : 'collapse', modeRef.current);
                 if (next !== null) setViewFlags((f) => (f.git === next ? f : { ...f, git: next }));

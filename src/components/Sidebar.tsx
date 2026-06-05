@@ -19,6 +19,9 @@ type Props = {
   activeFile: { folderId: string; relativePath: string } | null;
   markdownOnly?: boolean;
   gitPanel?: ReactNode;
+  /** Toggle chip state — drives animated collapse/expand of the git split.
+   *  The Panel stays mounted so the global [data-panel] flex transition runs. */
+  gitVisible?: boolean;
   /** Drag-collapse/expand of the internal git split (so the Git toggle stays in sync). */
   onGitVisibilityChange?: (visible: boolean) => void;
   onPickFile: (folderId: string, relativePath: string) => void;
@@ -34,6 +37,7 @@ export function Sidebar({
   activeFile,
   markdownOnly,
   gitPanel,
+  gitVisible,
   onGitVisibilityChange,
   onPickFile,
   onCloseFolder,
@@ -70,11 +74,31 @@ export function Sidebar({
     }
     const p = gitPanelRef.current;
     if (p) {
-      p.expand();
-      if (p.getSize() < 10) p.resize(30);
+      if (gitVisible) {
+        p.expand();
+        if (p.getSize() < 10) p.resize(30);
+      } else {
+        p.collapse();
+      }
     }
     gitReadyRef.current = true;
+    // Mount-only by design — the toggle effect below reacts to gitVisible.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasGitPanel]);
+
+  // Animated open/close from the Git toggle chip. The Panel stays mounted so
+  // the global [data-panel] flex transition (globals.css) can animate it.
+  useEffect(() => {
+    if (!hasGitPanel) return;
+    const p = gitPanelRef.current;
+    if (!p) return;
+    if (gitVisible) {
+      p.expand();
+      if (p.getSize() < 10) p.resize(30);
+    } else {
+      p.collapse();
+    }
+  }, [gitVisible, hasGitPanel]);
 
   useEffect(() => {
     return subscribeReveal(({ folderId, relativePath }) => {
@@ -197,7 +221,10 @@ export function Sidebar({
         </Panel>
         {gitPanel && (
           <>
-            <PanelResizeHandle className="h-1.5 shrink-0 cursor-row-resize bg-border transition-colors hover:bg-accent" />
+            <PanelResizeHandle
+              className="h-1.5 shrink-0 cursor-row-resize bg-border transition-colors hover:bg-accent"
+              style={{ display: gitVisible ? undefined : 'none' }}
+            />
             <Panel
               ref={gitPanelRef}
               defaultSize={30}
