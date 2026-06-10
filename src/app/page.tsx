@@ -522,15 +522,24 @@ export default function Page() {
     modeRef.current = mode;
   }, [mode, hydrated]);
 
-  // Switch mode with a brief loading overlay (the Code editor / language load can lag).
+  // Switch mode behind the spinner overlay: the overlay paints first (sync
+  // state), the heavy pane render runs in an interruptible transition, and
+  // the overlay clears only AFTER the new mode has committed. (The previous
+  // double-rAF cleared it on a timer guess — usually before the work was
+  // done, so the spinner never showed and the UI just froze.)
+  const pendingModeRef = useRef<Mode | null>(null);
   function changeMode(next: Mode) {
-    setMode((cur) => {
-      if (cur === next) return cur;
-      setModeSwitching(true);
-      requestAnimationFrame(() => requestAnimationFrame(() => setModeSwitching(false)));
-      return next;
-    });
+    if (modeRef.current === next || pendingModeRef.current === next) return;
+    pendingModeRef.current = next;
+    setModeSwitching(true);
+    startTransition(() => setMode(next));
   }
+  useEffect(() => {
+    if (pendingModeRef.current !== mode) return;
+    pendingModeRef.current = null;
+    const raf = requestAnimationFrame(() => setModeSwitching(false));
+    return () => cancelAnimationFrame(raf);
+  }, [mode]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -764,12 +773,16 @@ export default function Page() {
     const sep = folder.hostPath.includes('\\') ? '\\' : '/';
     const absPath = folder.hostPath + sep + activeTab.relativePath.replace(/\//g, sep);
 
-    // Instant if cached — no fetch round-trip.
+    // Instant if cached — no fetch round-trip. The commit runs in a transition:
+    // the tab highlight paints immediately while the (expensive) markdown
+    // re-parse + remount happens interruptibly, like the live-reload path.
     const cached = contentCache[absPath];
     if (cached) {
-      setContent(cached.content);
-      setActiveHostPath(cached.hostPath);
       if (contentStoreRef.current.get(absPath) === undefined) contentStoreRef.current.seed(absPath, cached.content);
+      startTransition(() => {
+        setContent(cached.content);
+        setActiveHostPath(cached.hostPath);
+      });
       return;
     }
 
@@ -777,10 +790,12 @@ export default function Page() {
     getApi().fs.read(absPath)
       .then((d) => {
         if (cancelled) return;
-        setContent(d.content);
-        setActiveHostPath(d.hostPath);
-        setContentCache((c) => ({ ...c, [absPath]: { content: d.content, hostPath: d.hostPath } }));
         if (contentStoreRef.current.get(absPath) === undefined) contentStoreRef.current.seed(absPath, d.content);
+        startTransition(() => {
+          setContent(d.content);
+          setActiveHostPath(d.hostPath);
+          setContentCache((c) => ({ ...c, [absPath]: { content: d.content, hostPath: d.hostPath } }));
+        });
       })
       .catch(() => {
         if (cancelled) return;
@@ -831,6 +846,27 @@ export default function Page() {
     const sep = folder.hostPath.includes('\\') ? '\\' : '/';
     return folder.hostPath + sep + activeTab.relativePath.replace(/\//g, sep);
   }
+
+  // --- Hidden-pane freeze ---
+  // The md and code panes both stay mounted (display:none) to preserve scroll
+  // and editor state, but that meant BOTH paid full cost on every tab switch:
+  // markdown re-parse + remount while in code mode, and editor-state rebuild +
+  // language import while in md mode. Freezing the hidden pane's inputs makes
+  // only the visible pane react; the other catches up once on mode switch.
+  const liveMdContent = (() => {
+    const p = activeAbsPath();
+    const b = p ? contentStoreRef.current.get(p) : undefined;
+    return b !== undefined ? b : content;
+  })();
+  const liveMdIsDiagram = activeTab ? isMermaidPath(activeTab.relativePath) : false;
+  const frozenMdRef = useRef({ content: liveMdContent, isDiagram: liveMdIsDiagram });
+  if (mode === 'md') frozenMdRef.current = { content: liveMdContent, isDiagram: liveMdIsDiagram };
+  const mdPane = frozenMdRef.current;
+
+  const liveCodePath = activeAbsPath();
+  const frozenCodePathRef = useRef(liveCodePath);
+  if (mode === 'code') frozenCodePathRef.current = liveCodePath;
+  const codePanePath = frozenCodePathRef.current;
 
   function handleEditorChange(absPath: string, text: string) {
     const store = contentStoreRef.current;
@@ -1435,22 +1471,14 @@ export default function Page() {
                     ) : activeTab ? (
                       <>
                         <div className="h-full" hidden={mode !== 'md'}>
-                          {isMermaidPath(activeTab.relativePath) ? (
+                          {mdPane.isDiagram ? (
                             <DiagramView
-                              source={(() => {
-                                const p = activeAbsPath();
-                                const b = p ? contentStoreRef.current.get(p) : undefined;
-                                return b !== undefined ? b : content;
-                              })()}
+                              source={mdPane.content}
                               theme={state.theme}
                             />
                           ) : (
                             <MarkdownView
-                              content={(() => {
-                                const p = activeAbsPath();
-                                const b = p ? contentStoreRef.current.get(p) : undefined;
-                                return b !== undefined ? b : content;
-                              })()}
+                              content={mdPane.content}
                               theme={state.theme}
                               onOpenMermaidInNewTab={openMermaidInNewTab}
                               findBarOpen={findBarOpenForActive}
@@ -1462,7 +1490,7 @@ export default function Page() {
                         </div>
                         <div className="h-full" hidden={mode !== 'code'}>
                           {(() => {
-                            const p = activeAbsPath();
+                            const p = codePanePath;
                             if (!p) {
                               return (
                                 <div className="flex h-full items-center justify-center text-sm text-muted">

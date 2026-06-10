@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { Theme } from '@/types';
 import { MermaidBlock } from './MermaidBlock';
 
@@ -10,8 +10,9 @@ type Props = {
 };
 
 /** Full-pane view for standalone .mmd/.mermaid files: the whole file is one
- *  diagram, with a Source toggle for reading the raw text. */
-export function DiagramView({ source, theme, onRendered }: Props) {
+ *  diagram, with a Source toggle for reading the raw text. Memoized — see
+ *  MarkdownView for why. */
+export const DiagramView = memo(function DiagramView({ source, theme, onRendered }: Props) {
   const [showSource, setShowSource] = useState(false);
   return (
     <div className="flex h-full flex-col">
@@ -42,4 +43,4 @@ export function DiagramView({ source, theme, onRendered }: Props) {
       )}
     </div>
   );
-}
+});
