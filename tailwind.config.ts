@@ -13,8 +13,12 @@ const config: Config = {
         muted:        'rgb(var(--c-muted) / <alpha-value>)',
         border:       'rgb(var(--c-border) / <alpha-value>)',
         accent:       'rgb(var(--c-accent) / <alpha-value>)',
+        'accent-2':   'rgb(var(--c-accent-2) / <alpha-value>)',
         'accent-fg':  'rgb(var(--c-accent-fg) / <alpha-value>)',
         'accent-soft':'rgb(var(--c-accent-soft) / <alpha-value>)',
+        danger:       'rgb(var(--c-danger) / <alpha-value>)',
+        warn:         'rgb(var(--c-warn) / <alpha-value>)',
+        ok:           'rgb(var(--c-ok) / <alpha-value>)',
         folder: {
           blue: '#2563eb',
           green: '#16a34a',
@@ -26,6 +30,14 @@ const config: Config = {
       },
       borderRadius: {
         theme: 'var(--radius)',
+        'theme-sm': 'var(--r-sm)',
+        'theme-md': 'var(--r-md)',
+        'theme-lg': 'var(--r-lg)',
+      },
+      boxShadow: {
+        'elev-1': 'var(--shadow-1)',
+        'elev-2': 'var(--shadow-2)',
+        'elev-3': 'var(--shadow-3)',
       },
     },
   },

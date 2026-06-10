@@ -11,133 +11,190 @@ html { font-size: 16px; }
 html.ui-small { font-size: 14px; }
 html.ui-large { font-size: 18px; }
 
-/* Default (pre-hydration) mirrors Light. */
+/* ---- Design tokens. Color channels are space-separated RGB so Tailwind can
+   apply alpha. Shape/elevation/motion tokens are per-theme tunable.
+   Default (pre-hydration) mirrors Light. ---- */
 :root,
 [data-theme="light"] {
   --c-bg: 255 255 255;
-  --c-surface: 248 250 252;
-  --c-surface-2: 241 245 249;
-  --c-fg: 15 23 42;
-  --c-muted: 100 116 139;
-  --c-border: 226 232 240;
-  --c-accent: 37 99 235;
+  --c-surface: 247 247 251;
+  --c-surface-2: 240 240 247;
+  --c-fg: 22 22 29;
+  --c-muted: 110 112 128;
+  --c-border: 228 228 238;
+  --c-accent: 109 93 246;        /* #6D5DF6 blue-violet */
+  --c-accent-2: 56 189 248;      /* gradient endpoint #38BDF8 */
   --c-accent-fg: 255 255 255;
-  --c-accent-soft: 239 246 255;
-  --radius: 6px;
+  --c-accent-soft: 237 234 255;
+  --c-danger: 225 29 72;
+  --c-warn: 217 119 6;
+  --c-ok: 5 150 105;
+  --radius: 12px;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+  --shadow-1: 0 1px 2px rgb(16 16 24 / 0.06);
+  --shadow-2: 0 4px 12px rgb(16 16 24 / 0.08);
+  --shadow-3: 0 12px 32px rgb(16 16 24 / 0.14);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --glass: none; /* aurora overrides */
 }
 
 [data-theme="dark"] {
-  --c-bg: 15 23 42;
-  --c-surface: 30 41 59;
-  --c-surface-2: 51 65 85;
-  --c-fg: 241 245 249;
-  --c-muted: 148 163 184;
-  --c-border: 51 65 85;
-  --c-accent: 59 130 246;
+  --c-bg: 16 17 23;
+  --c-surface: 24 26 35;
+  --c-surface-2: 33 35 48;
+  --c-fg: 232 233 240;
+  --c-muted: 146 149 168;
+  --c-border: 42 44 60;
+  --c-accent: 139 124 255;       /* #8B7CFF */
+  --c-accent-2: 94 200 248;
   --c-accent-fg: 255 255 255;
-  --c-accent-soft: 29 58 110;
-  --radius: 6px;
+  --c-accent-soft: 41 37 78;
+  --c-danger: 251 113 133;
+  --c-warn: 251 191 36;
+  --c-ok: 52 211 153;
+  --radius: 12px;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-2: 0 4px 12px rgb(0 0 0 / 0.4);
+  --shadow-3: 0 12px 32px rgb(0 0 0 / 0.55);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --glass: none;
 }
 
-/* Cartoon — neobrutalist house style (cream/amber light, charcoal dark;
-   thick ink borders, hard offset shadows). Tokens from the personal
-   html-house-style skill. --nb-shadow/--nb-red drive the chrome rules below. */
-[data-theme="cartoon-light"] {
-  --c-bg: 255 253 248;        /* #FFFDF8 page */
-  --c-surface: 250 250 250;   /* #FAFAFA card */
-  --c-surface-2: 255 244 218; /* #FFF4DA input */
-  --c-fg: 17 24 39;           /* #111827 ink */
-  --c-muted: 75 85 99;        /* #4B5563 */
-  --c-border: 17 24 39;       /* #111827 line */
-  --c-accent: 255 196 128;    /* #FFC480 */
-  --c-accent-fg: 17 24 39;    /* on-accent — dark in BOTH themes */
-  --c-accent-soft: 255 244 218;
-  --radius: 8px;
-  --nb-shadow: 17 24 39;
-  --nb-red: 254 74 96;        /* #FE4A60 */
-  --nb-good: 31 122 77;       /* #1F7A4D */
+[data-theme="aurora"] {
+  --c-bg: 14 11 30;
+  --c-surface: 26 21 48;
+  --c-surface-2: 36 27 69;
+  --c-fg: 238 234 251;
+  --c-muted: 158 149 195;
+  --c-border: 53 43 96;
+  --c-accent: 167 139 250;       /* #A78BFA */
+  --c-accent-2: 125 211 252;     /* #7DD3FC */
+  --c-accent-fg: 20 14 45;
+  --c-accent-soft: 59 45 114;
+  --c-danger: 251 113 133;
+  --c-warn: 252 211 77;
+  --c-ok: 110 231 183;
+  --radius: 14px;
+  --r-sm: 10px; --r-md: 14px; --r-lg: 18px;
+  --shadow-1: 0 1px 3px rgb(8 5 20 / 0.5);
+  --shadow-2: 0 6px 18px rgb(8 5 20 / 0.55);
+  --shadow-3: 0 16px 40px rgb(8 5 20 / 0.7);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --glass: blur(14px) saturate(1.4);
 }
 
-[data-theme="cartoon-dark"] {
-  --c-bg: 23 22 27;           /* #17161B page */
-  --c-surface: 35 33 40;      /* #232128 card */
-  --c-surface-2: 43 41 50;    /* #2B2932 panel */
-  --c-fg: 242 239 233;        /* #F2EFE9 ink */
-  --c-muted: 163 158 149;     /* #A39E95 */
-  --c-border: 0 0 0;          /* #000000 line */
-  --c-accent: 255 196 128;    /* #FFC480 */
-  --c-accent-fg: 17 24 39;    /* on-accent — dark in BOTH themes */
-  --c-accent-soft: 58 48 31;  /* #3A301F */
-  --radius: 8px;
-  --nb-shadow: 0 0 0;
-  --nb-red: 255 107 122;      /* #FF6B7A */
-  --nb-good: 95 208 138;      /* #5FD08A */
+[data-theme="nord"] {
+  --c-bg: 46 52 64;
+  --c-surface: 59 66 82;
+  --c-surface-2: 67 76 94;
+  --c-fg: 236 239 244;
+  --c-muted: 160 170 190;
+  --c-border: 76 86 106;
+  --c-accent: 136 192 208;       /* #88C0D0 */
+  --c-accent-2: 129 161 193;     /* #81A1C1 */
+  --c-accent-fg: 36 41 51;
+  --c-accent-soft: 64 80 95;
+  --c-danger: 191 97 106;
+  --c-warn: 235 203 139;
+  --c-ok: 163 190 140;
+  --radius: 10px;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+  --shadow-1: 0 1px 2px rgb(20 24 32 / 0.4);
+  --shadow-2: 0 4px 12px rgb(20 24 32 / 0.45);
+  --shadow-3: 0 12px 32px rgb(20 24 32 / 0.6);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --glass: none;
+}
+
+[data-theme="sepia"] {
+  --c-bg: 247 241 227;
+  --c-surface: 253 248 236;
+  --c-surface-2: 240 231 211;
+  --c-fg: 61 52 39;
+  --c-muted: 130 116 95;
+  --c-border: 222 210 186;
+  --c-accent: 181 128 60;        /* #B5803C */
+  --c-accent-2: 142 101 48;
+  --c-accent-fg: 255 251 240;
+  --c-accent-soft: 238 224 198;
+  --c-danger: 178 58 72;
+  --c-warn: 170 110 20;
+  --c-ok: 82 124 70;
+  --radius: 10px;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+  --shadow-1: 0 1px 2px rgb(90 70 40 / 0.10);
+  --shadow-2: 0 4px 12px rgb(90 70 40 / 0.12);
+  --shadow-3: 0 12px 32px rgb(90 70 40 / 0.18);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --glass: none;
+}
+
+[data-theme="dracula"] {
+  --c-bg: 40 42 54;
+  --c-surface: 52 55 70;
+  --c-surface-2: 60 63 81;
+  --c-fg: 248 248 242;
+  --c-muted: 154 158 180;
+  --c-border: 68 71 90;
+  --c-accent: 189 147 249;       /* #BD93F9 */
+  --c-accent-2: 255 121 198;     /* #FF79C6 */
+  --c-accent-fg: 30 31 41;
+  --c-accent-soft: 72 62 105;
+  --c-danger: 255 85 85;
+  --c-warn: 241 250 140;
+  --c-ok: 80 250 123;
+  --radius: 12px;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+  --shadow-1: 0 1px 2px rgb(15 16 22 / 0.45);
+  --shadow-2: 0 4px 12px rgb(15 16 22 / 0.5);
+  --shadow-3: 0 12px 32px rgb(15 16 22 / 0.65);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --glass: none;
 }
 
 body {
   @apply bg-bg text-fg;
 }
 
-/* Neo-brutalist chrome: every control that already draws a border gets thick
-   ink + a hard shadow, with the gitingest press-down hover. Borderless icon
-   buttons are left alone (they'd look too heavy). */
-[data-theme^="cartoon"] button[class*="border"],
-[data-theme^="cartoon"] input[type="text"],
-[data-theme^="cartoon"] input[type="search"],
-[data-theme^="cartoon"] select,
-[data-theme^="cartoon"] textarea {
-  border-width: 2px;
-  border-color: rgb(var(--c-border));
-  box-shadow: 2px 2px 0 rgb(var(--nb-shadow));
+/* ---- Modern chrome: motion, gradient accents, glass panels. ---- */
+@media (prefers-reduced-motion: no-preference) {
+  button, [role="tab"], input, select {
+    transition: background-color 150ms var(--ease), border-color 150ms var(--ease),
+                color 150ms var(--ease), box-shadow 200ms var(--ease),
+                transform 150ms var(--ease);
+  }
 }
-[data-theme^="cartoon"] button[class*="border"]:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 rgb(var(--nb-shadow));
+
+/* Primary action surfaces get the accent gradient (opt in with .btn-gradient). */
+.btn-gradient {
+  background-image: linear-gradient(135deg, rgb(var(--c-accent)), rgb(var(--c-accent-2)));
+  color: rgb(var(--c-accent-fg));
 }
-[data-theme^="cartoon"] button[class*="border"]:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 rgb(var(--nb-shadow));
+.btn-gradient:hover { filter: brightness(1.08); box-shadow: var(--shadow-2); }
+.btn-gradient:active { filter: brightness(0.96); transform: translateY(1px); }
+
+/* Floating panels — modals, menus, popovers (opt in with .panel-float). */
+.panel-float {
+  border: 1px solid rgb(var(--c-border));
+  border-radius: var(--r-lg);
+  background-color: rgb(var(--c-surface));
+  box-shadow: var(--shadow-3);
 }
-/* Modal / floating cards (all use shadow-xl today) get the big offset shadow. */
-[data-theme^="cartoon"] .shadow-xl {
-  border: 3px solid rgb(var(--c-border));
-  box-shadow: 6px 6px 0 rgb(var(--nb-shadow));
+[data-theme="aurora"] .panel-float {
+  background-color: rgb(var(--c-surface) / 0.75);
+  backdrop-filter: var(--glass);
 }
-/* The pale amber accent works as a BACKGROUND (with ink text) but is
-   unreadable as text/border color on the page. Remap those usages to the
-   house-style red + ink. */
-[data-theme^="cartoon"] .text-accent {
-  color: rgb(var(--nb-red));
-}
-[data-theme^="cartoon"] .border-accent {
-  border-color: rgb(var(--c-border));
-}
-/* House-style default reading font for the cartoon themes: Latin → Inter,
-   Thai falls through to Noto Sans Thai. A font picked in Settings → Fonts
-   overrides this via the article's inline style. */
-[data-theme^="cartoon"] .prose-md {
+
+/* Entry animations for overlays. */
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.97) translateY(4px) } to { opacity: 1; transform: none } }
+
+/* Default reading font: Latin → Inter, Thai → Noto Sans Thai. A font picked
+   in Settings → Fonts overrides this via the article's inline style. */
+.prose-md {
   font-family: 'Inter', 'Noto Sans Thai', system-ui, sans-serif;
 }
-/* Window controls take the neobrutalist treatment in cartoon themes:
-   house palette (amber/green/red), ink border, hard offset shadow,
-   press-down hover — matching every other cartoon button. */
-[data-theme^="cartoon"] .window-control {
-  border: 2px solid rgb(var(--c-border));
-  box-shadow: 1px 1px 0 rgb(var(--nb-shadow));
-  color: rgb(17 24 39 / 0.75);
-  transition: transform 0.1s, box-shadow 0.1s, font-size 0.1s;
-}
-[data-theme^="cartoon"] .window-control:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 2px 2px 0 rgb(var(--nb-shadow));
-}
-[data-theme^="cartoon"] .window-control:active {
-  transform: translate(1px, 1px);
-  box-shadow: none;
-}
-[data-theme^="cartoon"] .wc-min { background: rgb(var(--c-accent)); }
-[data-theme^="cartoon"] .wc-max { background: rgb(var(--nb-good)); }
-[data-theme^="cartoon"] .wc-close { background: rgb(var(--nb-red)); }
 
 /* Bundled reading font (Settings → Fonts). Full Noto Sans Thai variable font —
    covers Thai AND Latin, works offline. */
