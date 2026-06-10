@@ -5,6 +5,7 @@ import svgPanZoom from 'svg-pan-zoom';
 import type { Theme } from '@/types';
 import { themeMode } from '@/lib/themes';
 import { normalizeMermaidEntities } from '@/lib/mermaid-entities';
+import { normalizeMermaidSource } from '@/lib/mermaid-normalize';
 import { getApi, hasApi } from '@/lib/electron-api';
 
 /** Every failed diagram lands in the error-logs folder (with its source) so the
@@ -26,6 +27,34 @@ type Props = {
 };
 
 const idCounter = { n: 0 };
+
+/**
+ * Render with progressively cleaned-up sources: raw, HTML entities rewritten,
+ * whole-source normalization (BOM/CRLF/smart quotes), then both combined.
+ * Throws the FIRST error (about the user's actual source) when every attempt
+ * fails — later errors describe synthetic variants and would only confuse.
+ */
+async function renderWithRetries(id: string, src: string): Promise<string> {
+  const attempts: string[] = [src];
+  const entities = normalizeMermaidEntities(src);
+  if (entities !== src) attempts.push(entities);
+  const normalized = normalizeMermaidSource(src);
+  if (normalized !== src) attempts.push(normalized);
+  const both = normalizeMermaidEntities(normalized);
+  if (both !== normalized && both !== entities) attempts.push(both);
+  let firstErr: Error | null = null;
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      const { svg } = await mermaid.render(`${id}-a${i}`, attempts[i]);
+      return svg;
+    } catch (e) {
+      if (!firstErr) firstErr = e as Error;
+      // mermaid leaves an orphan error element behind on failed renders.
+      document.getElementById(`d${id}-a${i}`)?.remove();
+    }
+  }
+  throw firstErr ?? new Error('render error');
+}
 
 /**
  * Safely tear down a svg-pan-zoom instance. Its destroy() calls SVGMatrix.inverse(),
@@ -69,11 +98,22 @@ function parseSvg(markup: string): SVGSVGElement | null {
 }
 
 function mountSvg(host: HTMLElement, markup: string): SVGSVGElement | null {
-  const svg = parseSvg(markup);
+  const parsed = parseSvg(markup);
+  let svg: SVGSVGElement | null = null;
+  if (parsed) {
+    host.replaceChildren(parsed);
+    svg = parsed;
+  } else {
+    // Fallback: some DOM implementations can't parse image/svg+xml via
+    // DOMParser; the HTML parser handles inline SVG as foreign content.
+    // markup is mermaid's own render output (securityLevel: 'strict', which
+    // sanitizes labels) — never raw user HTML.
+    host.innerHTML = markup;
+    svg = host.querySelector('svg');
+  }
   if (!svg) return null;
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
-  host.replaceChildren(svg);
   return svg;
 }
 
@@ -82,7 +122,9 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
   const overlayContainerRef = useRef<HTMLDivElement | null>(null);
   const panZoomRef = useRef<ReturnType<typeof svgPanZoom> | null>(null);
   const overlayPanZoomRef = useRef<ReturnType<typeof svgPanZoom> | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // svgMarkup holds the LAST GOOD render; renderError != null marks it stale.
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const [showError, setShowError] = useState(false);
   const [svgMarkup, setSvgMarkup] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -94,32 +136,18 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
     });
     let cancelled = false;
     const id = `mmd-${++idCounter.n}`;
-    setError(null);
-    mermaid
-      .render(id, source)
-      .then(({ svg }) => { if (!cancelled) setSvgMarkup(svg); })
+    renderWithRetries(id, source)
+      .then((svg) => {
+        if (cancelled) return;
+        setSvgMarkup(svg);
+        setRenderError(null);
+        setShowError(false);
+      })
       .catch((e) => {
-        // Entities like '&lt;' break mermaid's parser (their ';' ends the
-        // statement). Retry once with them rewritten to mermaid '#N;' escapes;
-        // sources without entities are unchanged, so no retry happens.
-        const normalized = normalizeMermaidEntities(source);
-        const originalError = (e as Error).message || 'render error';
-        if (cancelled || normalized === source) {
-          if (!cancelled) {
-            setError(originalError);
-            reportMermaidError(originalError, source);
-          }
-          return;
-        }
-        mermaid
-          .render(`${id}-retry`, normalized)
-          .then(({ svg }) => { if (!cancelled) setSvgMarkup(svg); })
-          .catch(() => {
-            if (!cancelled) {
-              setError(originalError);
-              reportMermaidError(originalError, source);
-            }
-          });
+        if (cancelled) return;
+        const msg = (e as Error).message || 'render error';
+        setRenderError(msg); // svgMarkup intentionally kept — stale view
+        reportMermaidError(msg, source);
       });
     return () => { cancelled = true; };
   }, [source, theme]);
@@ -176,7 +204,7 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
     };
   }, [isFullscreen, svgMarkup]);
 
-  if (error) {
+  if (renderError && !svgMarkup) {
     return (
       <div className="my-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
         <div className="flex items-center justify-between">
@@ -190,7 +218,7 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
             📋 Copy source
           </button>
         </div>
-        <div className="mt-1 font-mono text-xs">{error}</div>
+        <div className="mt-1 font-mono text-xs">{renderError}</div>
         <pre className="mt-2 overflow-x-auto rounded bg-surface-2 p-2 text-xs text-fg">{source}</pre>
       </div>
     );
@@ -200,8 +228,25 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
     <>
       <div className="my-3 rounded-md border border-border bg-surface">
         <div className="flex items-center justify-between border-b border-border px-2 py-1 text-xs text-muted">
-          <span>Mermaid — scroll to zoom, middle-click to pan</span>
+          <span className="flex items-center gap-2">
+            <span>Mermaid — scroll to zoom, middle-click to pan</span>
+            {renderError && (
+              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                stale — source has an error
+              </span>
+            )}
+          </span>
           <div className="flex gap-1">
+            {renderError && (
+              <button
+                type="button"
+                onClick={() => setShowError((v) => !v)}
+                className="rounded px-2 py-0.5 hover:bg-surface-2"
+                aria-label={showError ? 'Hide error' : 'Show error'}
+              >
+                {showError ? 'Hide error' : 'Show error'}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => panZoomRef.current?.reset()}
@@ -232,6 +277,11 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
           </div>
         </div>
         <div ref={containerRef} className="h-[400px] overflow-hidden" />
+        {renderError && showError && (
+          <div className="border-t border-border bg-surface-2 p-2 font-mono text-xs text-fg">
+            {renderError}
+          </div>
+        )}
       </div>
 
       {isFullscreen && (
