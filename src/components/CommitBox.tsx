@@ -17,7 +17,7 @@ export function CommitBox({ stagedCount, busy, onCommit, onCommitAndPush }: Prop
       />
       <div className="mt-1 flex gap-1">
         <button type="button" disabled={disabled} onClick={() => { onCommit(msg.trim()); setMsg(''); }}
-          className="flex-1 rounded bg-accent px-2 py-1 text-xs text-accent-fg disabled:opacity-40">Commit</button>
+          className="btn-gradient flex-1 rounded-theme-sm px-2 py-1 text-xs disabled:opacity-40">Commit</button>
         <button type="button" disabled={disabled} onClick={() => { onCommitAndPush(msg.trim()); setMsg(''); }}
           className="rounded border border-border px-2 py-1 text-xs text-fg disabled:opacity-40">+Push</button>
       </div>

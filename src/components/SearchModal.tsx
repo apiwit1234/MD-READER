@@ -57,10 +57,10 @@ export function SearchModal({ open, folders, onClose, onSearch, busy = false }: 
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/30 pt-24" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/30 pt-24 backdrop-blur-sm animate-[fadeIn_150ms_var(--ease)]" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-[480px] rounded-md border border-border bg-surface text-fg shadow-xl"
+        className="panel-float w-[480px] text-fg animate-[popIn_180ms_var(--ease)]"
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-2">
           <span className="text-sm font-medium">Search</span>
@@ -125,7 +125,7 @@ export function SearchModal({ open, folders, onClose, onSearch, busy = false }: 
             type="button"
             disabled={!query || busy}
             onClick={submit}
-            className="rounded bg-accent px-3 py-1 text-sm font-medium text-accent-fg hover:bg-accent/90 disabled:bg-surface-2 disabled:text-muted"
+            className="btn-gradient rounded-theme-sm px-3 py-1 text-sm font-medium disabled:bg-none disabled:bg-surface-2 disabled:text-muted"
           >
             {busy ? 'Searching…' : 'Search'}
           </button>

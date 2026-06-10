@@ -60,11 +60,11 @@ export function SettingsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-[fadeIn_150ms_var(--ease)]"
       onClick={onClose}
     >
       <div
-        className="flex h-[min(70vh,640px)] w-full max-w-3xl overflow-hidden rounded-theme bg-surface text-fg shadow-xl"
+        className="panel-float flex h-[min(70vh,640px)] w-full max-w-3xl overflow-hidden text-fg animate-[popIn_180ms_var(--ease)]"
         onClick={(e) => e.stopPropagation()}
       >
         <nav className="flex w-44 shrink-0 flex-col gap-0.5 border-r border-border p-2">

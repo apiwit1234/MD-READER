@@ -191,7 +191,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={onOpenFolderClick}
-              className="mt-2 w-full rounded-lg bg-accent px-3 py-2 text-sm font-medium text-accent-fg hover:bg-accent/90"
+              className="btn-gradient mt-2 w-full rounded-theme-md px-3 py-2 text-sm font-medium"
             >
               + Open folder
             </button>

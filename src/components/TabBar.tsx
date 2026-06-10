@@ -186,13 +186,17 @@ export function TabBar({
               onMouseDown={onTearOff ? (e) => startTearDrag(e, t) : undefined}
               title={t.relativePath}
               className={[
-                'flex shrink-0 cursor-pointer select-none items-center gap-2 border-r border-border px-3 py-2 text-sm',
+                'relative flex shrink-0 cursor-pointer select-none items-center gap-2 border-r border-border px-3 py-2 text-sm',
                 t.pinned ? 'max-w-[160px]' : 'max-w-[220px]',
-                t.active
-                  ? 'border-b-2 border-b-accent bg-bg text-fg'
-                  : 'text-muted hover:bg-surface-2',
+                t.active ? 'bg-bg text-fg' : 'text-muted hover:bg-surface-2',
               ].join(' ')}
             >
+              {t.active && (
+                <span
+                  aria-hidden
+                  className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-accent to-accent-2"
+                />
+              )}
               <span className="h-3 w-[3px] shrink-0 rounded" style={{ background: t.color }} aria-hidden />
               {t.pinned && (
                 <span aria-label="pinned" title="pinned" className="text-warn"><Pin className="h-3 w-3" /></span>
@@ -231,7 +235,7 @@ export function TabBar({
           {listOpen && (
             <div
               {...listHide}
-              className="absolute right-0 top-full z-50 max-h-[min(420px,55vh)] w-[300px] overflow-y-auto rounded-md border border-border bg-surface py-1 shadow-lg"
+              className="panel-float absolute right-0 top-full z-50 max-h-[min(420px,55vh)] w-[300px] overflow-y-auto py-1 animate-[popIn_150ms_var(--ease)]"
             >
               {tabs.map((t) => (
                 <div
@@ -289,7 +293,7 @@ export function TabBar({
       {menu && (
         <div
           {...menuHide}
-          className="fixed z-50 min-w-[180px] rounded-md border border-border bg-surface py-1 shadow-lg"
+          className="panel-float fixed z-50 min-w-[180px] py-1 animate-[popIn_150ms_var(--ease)]"
           style={{ left: menu.x, top: menu.y }}
           onClick={(e) => e.stopPropagation()}
         >

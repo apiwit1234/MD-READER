@@ -58,11 +58,11 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-[fadeIn_150ms_var(--ease)]" onClick={onClose}>
       <div
         role="dialog"
         aria-label="Open folder"
-        className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl bg-surface text-fg shadow-xl"
+        className="panel-float flex max-h-[80vh] w-full max-w-2xl flex-col text-fg animate-[popIn_180ms_var(--ease)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
@@ -149,7 +149,7 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
             type="button"
             onClick={() => data && onPick(data.currentPath)}
             disabled={!data}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-gradient rounded-theme-md px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
           >
             Open this folder
           </button>

@@ -199,7 +199,7 @@ export function FolderSection({
       {menu && (
         <div
           {...menuHide}
-          className="fixed z-50 min-w-[180px] rounded-md border border-border bg-surface py-1 shadow-lg"
+          className="panel-float fixed z-50 min-w-[180px] py-1 animate-[popIn_150ms_var(--ease)]"
           style={{ left: menu.x, top: menu.y }}
           onClick={(e) => e.stopPropagation()}
         >
