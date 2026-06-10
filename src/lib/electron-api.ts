@@ -113,9 +113,12 @@ type MdReader = {
     data: (id: string) => Promise<{ ok: boolean; bytes?: Uint8Array; format?: string; error?: string }>;
   };
   update: {
-    check: () => Promise<{ ok: boolean; version?: string | null; error?: string }>;
+    check: () => Promise<{ ok: boolean; version?: string | null; notes?: string; error?: string }>;
+    download: () => Promise<{ ok: boolean; version?: string; error?: string }>;
     install: () => Promise<boolean>;
     onUpdateReady: (cb: (version: string) => void) => () => void;
+    onUpdateAvailable: (cb: (version: string) => void) => () => void;
+    onProgress: (cb: (percent: number) => void) => () => void;
   };
   fileUtil: {
     pathForFile: (file: File) => string | null;

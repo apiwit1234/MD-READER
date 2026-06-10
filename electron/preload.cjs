@@ -100,11 +100,22 @@ contextBridge.exposeInMainWorld('mdreader', {
   },
   update: {
     check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
     install: () => ipcRenderer.invoke('update:install'),
     onUpdateReady: (cb) => {
       const listener = (_e, version) => cb(version);
       ipcRenderer.on('app:update-ready', listener);
       return () => ipcRenderer.removeListener('app:update-ready', listener);
+    },
+    onUpdateAvailable: (cb) => {
+      const listener = (_e, version) => cb(version);
+      ipcRenderer.on('app:update-available', listener);
+      return () => ipcRenderer.removeListener('app:update-available', listener);
+    },
+    onProgress: (cb) => {
+      const listener = (_e, percent) => cb(percent);
+      ipcRenderer.on('app:update-progress', listener);
+      return () => ipcRenderer.removeListener('app:update-progress', listener);
     },
   },
   fileUtil: {
