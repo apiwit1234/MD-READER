@@ -14,10 +14,11 @@ vi.mock('svg-pan-zoom', () => ({
   default: () => ({ destroy: vi.fn(), reset: vi.fn(), zoomIn: vi.fn(), zoomOut: vi.fn() }),
 }));
 
-import { MermaidBlock } from './MermaidBlock';
+import { MermaidBlock, __clearMermaidRenderCache } from './MermaidBlock';
 
 beforeEach(async () => {
   document.body.replaceChildren();
+  __clearMermaidRenderCache();
   // Reset the render mock fully (incl. any unconsumed mock*Once queue from a
   // prior test) and restore the default success implementation.
   const mermaid = (await import('mermaid')).default;
@@ -109,6 +110,37 @@ describe('MermaidBlock', () => {
     fireEvent.click(await screen.findByRole('button', { name: /show error/i }));
 
     expect(await screen.findByText(/parse error on line 2/i)).toBeInTheDocument();
+  });
+
+  it('serves a re-mounted identical diagram from the SVG cache (no second mermaid.render)', async () => {
+    const mermaid = (await import('mermaid')).default;
+    const renderMock = mermaid.render as ReturnType<typeof vi.fn>;
+    const onRendered = vi.fn();
+    const { unmount } = render(<MermaidBlock source="graph LR; C-->D" theme="light" onRendered={onRendered} />);
+    await waitFor(() => expect(onRendered).toHaveBeenCalled());
+    expect(renderMock).toHaveBeenCalledTimes(1);
+    unmount();
+
+    const onRendered2 = vi.fn();
+    render(<MermaidBlock source="graph LR; C-->D" theme="light" onRendered={onRendered2} />);
+    await waitFor(() => expect(onRendered2).toHaveBeenCalled());
+
+    expect(renderMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not serve the cache across themes', async () => {
+    const mermaid = (await import('mermaid')).default;
+    const renderMock = mermaid.render as ReturnType<typeof vi.fn>;
+    const onRendered = vi.fn();
+    const { unmount } = render(<MermaidBlock source="graph LR; C-->D" theme="light" onRendered={onRendered} />);
+    await waitFor(() => expect(onRendered).toHaveBeenCalled());
+    unmount();
+
+    const onRendered2 = vi.fn();
+    render(<MermaidBlock source="graph LR; C-->D" theme="dark" onRendered={onRendered2} />);
+    await waitFor(() => expect(onRendered2).toHaveBeenCalled());
+
+    expect(renderMock).toHaveBeenCalledTimes(2);
   });
 
   it('retries with normalizeMermaidSource when the raw CRLF source fails', async () => {
