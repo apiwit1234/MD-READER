@@ -54,6 +54,9 @@ type MdReader = {
     watch: (absPath: string) => Promise<boolean>;
     unwatch: (absPath: string) => Promise<void>;
     onChanged: (cb: (root: string) => void) => () => void;
+    watchFile: (absPath: string) => Promise<boolean>;
+    unwatchFile: (absPath: string) => Promise<void>;
+    onFileChanged: (cb: (absPath: string) => void) => () => void;
   };
   term: {
     spawn: (opts: TermSpawnOpts) => Promise<TermSpawnResult>;
