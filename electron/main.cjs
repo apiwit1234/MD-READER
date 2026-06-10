@@ -1,10 +1,20 @@
 /* Electron main process */
+// Velopack startup hook — MUST run before anything else (it handles
+// --veloapp-install/-updated/-obsolete/-uninstall events, auto-applies
+// downloaded updates, and may exit/restart the process).
+try {
+  const { VelopackApp } = require('velopack');
+  VelopackApp.build().run();
+} catch {
+  // dev environment / portable build without the velopack runtime — fine.
+}
+
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell, clipboard } = require('electron');
 const path = require('node:path');
 const os = require('node:os');
 const fs = require('node:fs').promises;
 const http = require('node:http');
-const { createReadStream, existsSync, statSync, appendFileSync, watch: fsWatch } = require('node:fs');
+const { createReadStream, createWriteStream, existsSync, statSync, appendFileSync, watch: fsWatch } = require('node:fs');
 const { scanFiles } = require('./search-core.cjs');
 const git = require('./git.cjs');
 const { createSettingsStore } = require('./settings.cjs');
@@ -103,44 +113,54 @@ ipcMain.handle('fonts:add', async () => {
 ipcMain.handle('fonts:remove', (_e, id) => getFontStore().remove(typeof id === 'string' ? id : ''));
 ipcMain.handle('fonts:data', (_e, id) => getFontStore().data(typeof id === 'string' ? id : ''));
 
-// --- Auto-update (electron-updater + GitHub Releases) ---
-let updaterRef = null;
+// --- Auto-update (Velopack + GitHub Releases) ---
+const { createUpdater, UPDATE_URL } = require('./updater.cjs');
 
-function initAutoUpdate() {
-  if (!app.isPackaged) return; // dev builds never check
-  let autoUpdater;
-  try {
-    ({ autoUpdater } = require('electron-updater'));
-  } catch (err) {
-    appendLog('autoUpdate', `electron-updater not loadable: ${(err && err.message) || err}`);
-    return;
-  }
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true; // installs silently on next quit
-  autoUpdater.on('update-downloaded', (info) => {
-    for (const w of BrowserWindow.getAllWindows()) {
-      try { w.webContents.send('app:update-ready', info.version); } catch {}
-    }
-  });
-  autoUpdater.on('error', (err) => appendLog('autoUpdate', String((err && err.stack) || err)));
-  updaterRef = autoUpdater;
-  if (getSettingsStore().read().autoUpdate) {
-    setTimeout(() => {
-      updaterRef.checkForUpdates().catch((err) => appendLog('autoUpdate', String(err)));
-    }, 10_000);
+function broadcastToWindows(channel, payload) {
+  for (const w of BrowserWindow.getAllWindows()) {
+    try { w.webContents.send(channel, payload); } catch {}
   }
 }
 
-// Restart immediately and apply a downloaded update (header pill click).
+const updater = createUpdater({
+  isPackaged: app.isPackaged,
+  makeManager: () => {
+    const { UpdateManager } = require('velopack');
+    return new UpdateManager(UPDATE_URL);
+  },
+  onProgress: (percent) => broadcastToWindows('app:update-progress', percent),
+  log: (m) => appendLog('autoUpdate', m),
+});
+
+// Auto flow on launch (settings.autoUpdate, default true): check, download in
+// the background, notify the renderer. The delta patch applies on restart
+// (Restart & Update button) or automatically on the next launch.
+function initAutoUpdate() {
+  if (!app.isPackaged) return;
+  if (!getSettingsStore().read().autoUpdate) return;
+  setTimeout(async () => {
+    try {
+      const c = await updater.check();
+      if (!c.ok || !c.version) return;
+      broadcastToWindows('app:update-available', c.version);
+      const d = await updater.download();
+      if (!d.ok) return;
+      broadcastToWindows('app:update-ready', d.version);
+    } catch (err) {
+      appendLog('autoUpdate', String((err && err.stack) || err));
+    }
+  }, 10_000);
+}
+
+// Download a checked update on demand (Settings → Updates → Download).
+ipcMain.handle('update:download', () => updater.download());
+
+// Apply the downloaded delta and relaunch. The Velopack updater waits for
+// this process to exit, so quit must follow immediately.
 ipcMain.handle('update:install', () => {
-  if (!updaterRef) return false;
-  try {
-    updaterRef.quitAndInstall();
-    return true;
-  } catch (err) {
-    appendLog('autoUpdate', String((err && err.stack) || err));
-    return false;
-  }
+  const started = updater.applyAndRestart();
+  if (started) setTimeout(() => app.quit(), 200);
+  return started;
 });
 
 // Tells the renderer (once per version change) that the app was just updated,
@@ -153,14 +173,60 @@ ipcMain.handle('app:versionInfo', () => {
   return { current, updatedFrom: lastRun && lastRun !== current ? lastRun : null };
 });
 
-ipcMain.handle('update:check', async () => {
-  if (!app.isPackaged) return { ok: false, error: 'dev build — updates only work in the installed app' };
-  if (!updaterRef) return { ok: false, error: 'updater unavailable' };
+ipcMain.handle('update:check', () => updater.check());
+
+// --- One-time NSIS → Velopack migration (UI-only for the user) ---
+const { detectInstallKind, buildMigrationPlan } = require('./migrate-nsis.cjs');
+
+ipcMain.handle('migrate:detect', () => {
+  if (!app.isPackaged) return 'none';
+  return detectInstallKind(process.execPath, existsSync);
+});
+
+function downloadFollowingRedirects(url, dest, depth = 0) {
+  return new Promise((resolve, reject) => {
+    if (depth > 5) return reject(new Error('too many redirects'));
+    require('node:https').get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        resolve(downloadFollowingRedirects(res.headers.location, dest, depth + 1));
+        return;
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        reject(new Error(`HTTP ${res.statusCode}`));
+        return;
+      }
+      const out = createWriteStream(dest);
+      res.pipe(out);
+      out.on('finish', () => out.close(() => resolve(undefined)));
+      out.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+// Download the Velopack Setup to temp, run it silently, then remove the NSIS
+// copy and exit. Order matters: never uninstall before the new Setup exits 0.
+ipcMain.handle('migrate:run', async () => {
+  const { spawn } = require('node:child_process');
+  const kind = detectInstallKind(process.execPath, existsSync);
+  if (kind !== 'nsis') return { ok: false, error: 'not an NSIS install' };
+  const plan = buildMigrationPlan(path.dirname(process.execPath));
+  const setupPath = path.join(app.getPath('temp'), 'PAXReader-win-Setup.exe');
   try {
-    const r = await updaterRef.checkForUpdates();
-    const remote = r && r.updateInfo ? r.updateInfo.version : null;
-    return { ok: true, version: remote !== app.getVersion() ? remote : null };
+    await downloadFollowingRedirects(plan.setupUrl, setupPath);
+    const code = await new Promise((resolve) => {
+      const child = spawn(setupPath, plan.setupArgs, { detached: false, stdio: 'ignore' });
+      child.on('exit', resolve);
+      child.on('error', () => resolve(-1));
+    });
+    if (code !== 0) return { ok: false, error: `setup exited with ${code}` };
+    // New install verified; remove the old one detached (it survives our exit).
+    spawn(plan.uninstallExe, plan.uninstallArgs, { detached: true, stdio: 'ignore' }).unref();
+    setTimeout(() => app.quit(), 500);
+    return { ok: true };
   } catch (err) {
+    appendLog('migrate', String((err && err.stack) || err));
     return { ok: false, error: String((err && err.message) || err) };
   }
 });

@@ -100,12 +100,27 @@ contextBridge.exposeInMainWorld('mdreader', {
   },
   update: {
     check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
     install: () => ipcRenderer.invoke('update:install'),
     onUpdateReady: (cb) => {
       const listener = (_e, version) => cb(version);
       ipcRenderer.on('app:update-ready', listener);
       return () => ipcRenderer.removeListener('app:update-ready', listener);
     },
+    onUpdateAvailable: (cb) => {
+      const listener = (_e, version) => cb(version);
+      ipcRenderer.on('app:update-available', listener);
+      return () => ipcRenderer.removeListener('app:update-available', listener);
+    },
+    onProgress: (cb) => {
+      const listener = (_e, percent) => cb(percent);
+      ipcRenderer.on('app:update-progress', listener);
+      return () => ipcRenderer.removeListener('app:update-progress', listener);
+    },
+  },
+  migrate: {
+    detect: () => ipcRenderer.invoke('migrate:detect'),
+    run: () => ipcRenderer.invoke('migrate:run'),
   },
   fileUtil: {
     // Returns the absolute host path for a File obtained from drag-and-drop, or null on failure.

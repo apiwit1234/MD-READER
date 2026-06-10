@@ -18,11 +18,13 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "release": "npm version patch"
+    "release": "npm version patch",
+    "release:pack": "npm run dist:dir && vpk pack --packId PAXReader --packVersion %npm_package_version% --packDir \"release/win-unpacked\" --mainExe \"PAX Reader.exe\" --packTitle \"PAX Reader\" --icon build/icon.ico --outputDir release/velopack",
+    "release:publish": "npm run release:pack && vpk upload github --repoUrl https://github.com/apiwit1234/MD-READER --publish --releaseName \"PAX Reader %npm_package_version%\" --tag v%npm_package_version% --outputDir release/velopack"
   },
   "dependencies": {
-    "electron-updater": "^6.8.3",
-    "node-pty": "^1.1.0"
+    "node-pty": "^1.1.0",
+    "velopack": "^1.2.0"
   },
   "devDependencies": {
     "@codemirror/commands": "^6.10.3",
@@ -91,14 +93,16 @@
       "package.json",
       "!**/*.{md,d.ts,map}",
       "!**/{test,__tests__,tests,powered-test,example,examples}",
-      "node_modules/node-pty/**/*"
+      "node_modules/node-pty/**/*",
+      "node_modules/velopack/**/*"
     ],
     "extraMetadata": {
       "main": "electron/main.cjs"
     },
     "npmRebuild": false,
     "asarUnpack": [
-      "node_modules/node-pty/**/*"
+      "node_modules/node-pty/**/*",
+      "node_modules/velopack/**/*"
     ],
     "win": {
       "icon": "build/icon.png",
