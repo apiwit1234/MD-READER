@@ -5,6 +5,7 @@ import { RepoSelector } from './RepoSelector';
 import { BranchMenu } from './BranchMenu';
 import { GitFileRow } from './GitFileRow';
 import { CommitBox } from './CommitBox';
+import { RefreshCw } from 'lucide-react';
 
 type Props = {
   repos: GitRepo[];
@@ -30,7 +31,7 @@ export function GitPanel({ repos, activeRoot, onSelectRepo, onOpenDiff, active }
       )}
       <div className="flex items-center justify-between border-b border-border px-2 py-1">
         <span className="text-[0.625rem] font-semibold uppercase tracking-wide text-muted">Source Control</span>
-        <button type="button" aria-label="Refresh git status" onClick={() => void git.refresh()} className="text-muted hover:text-fg">⟳</button>
+        <button type="button" aria-label="Refresh git status" onClick={() => void git.refresh()} className="text-muted hover:text-fg"><RefreshCw className="h-3.5 w-3.5" aria-hidden /></button>
       </div>
 
       <div className="space-y-1 border-b border-border p-2">

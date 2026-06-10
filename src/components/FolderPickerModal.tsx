@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { BrowseResponse, RecentFolder } from '@/types';
 import { getApi } from '@/lib/electron-api';
+import { Folder, X } from 'lucide-react';
 
 type Props = {
   isOpen: boolean;
@@ -74,7 +75,7 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
             >
               Native picker…
             </button>
-            <button onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-surface-2">✕</button>
+            <button onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-surface-2"><X className="h-4 w-4" aria-hidden /></button>
           </div>
         </div>
 
@@ -134,7 +135,7 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
                   className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-surface-2"
                   onClick={() => { if (data) setPath(joinPath(data.currentPath, e.name)); }}
                 >
-                  <span aria-hidden>📁</span>
+                  <Folder className="h-4 w-4 text-accent" aria-hidden />
                   <span>{e.name}</span>
                 </button>
               </li>

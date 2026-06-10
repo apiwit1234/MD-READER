@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useAutoHideMenu } from '@/lib/useAutoHideMenu';
+import { ChevronDown, Clipboard, ExternalLink, FolderOpen, Pin, PinOff, RefreshCw, X } from 'lucide-react';
 
 export type TabView = {
   folderId: string;
@@ -194,13 +195,13 @@ export function TabBar({
             >
               <span className="h-3 w-[3px] shrink-0 rounded" style={{ background: t.color }} aria-hidden />
               {t.pinned && (
-                <span aria-label="pinned" title="pinned" className="text-xs text-amber-500">📌</span>
+                <span aria-label="pinned" title="pinned" className="text-warn"><Pin className="h-3 w-3" /></span>
               )}
               {t.dirty && (
-                <span aria-label="unsaved" title="unsaved changes" className="text-amber-500">●</span>
+                <span aria-label="unsaved" title="unsaved changes" className="text-warn">●</span>
               )}
               {t.updating && (
-                <span aria-label="updating" title="updating from disk" className="inline-block animate-spin text-accent">↻</span>
+                <span aria-label="updating" title="updating from disk" className="inline-block animate-spin text-accent"><RefreshCw className="h-3 w-3" /></span>
               )}
               <span className="truncate">{t.filename}</span>
               {!t.pinned && (
@@ -210,7 +211,7 @@ export function TabBar({
                   onClick={(e) => { e.stopPropagation(); onClose(t); }}
                   className="shrink-0 rounded p-0.5 text-muted hover:bg-surface-2 hover:text-fg"
                 >
-                  ✕
+                  <X className="h-3 w-3" aria-hidden />
                 </button>
               )}
             </div>
@@ -225,7 +226,7 @@ export function TabBar({
             onClick={(e) => { e.stopPropagation(); setListOpen((v) => !v); }}
             className="border-l border-border px-3 py-2 text-xs text-muted hover:bg-surface-2"
           >
-            ▾ <span className="ml-1 font-mono">{tabs.length}</span>
+            <ChevronDown className="inline h-3 w-3" aria-hidden /> <span className="ml-1 font-mono">{tabs.length}</span>
           </button>
           {listOpen && (
             <div
@@ -243,9 +244,9 @@ export function TabBar({
                   ].join(' ')}
                 >
                   <span className="h-3 w-[3px] shrink-0 rounded" style={{ background: t.color }} aria-hidden />
-                  {t.pinned && <span className="text-amber-500">📌</span>}
-                  {t.dirty && <span className="text-amber-500">●</span>}
-                  {t.updating && <span className="inline-block animate-spin text-accent">↻</span>}
+                  {t.pinned && <span className="text-warn"><Pin className="h-3 w-3" /></span>}
+                  {t.dirty && <span className="text-warn">●</span>}
+                  {t.updating && <span className="inline-block animate-spin text-accent"><RefreshCw className="h-3 w-3" /></span>}
                   <span className="flex-1 truncate">{t.filename}</span>
                   {!t.pinned && (
                     <button
@@ -254,7 +255,7 @@ export function TabBar({
                       onClick={(e) => { e.stopPropagation(); onClose(t); }}
                       className="shrink-0 rounded p-0.5 text-muted hover:bg-surface-2 hover:text-fg"
                     >
-                      ✕
+                      <X className="h-3 w-3" aria-hidden />
                     </button>
                   )}
                 </div>
@@ -276,11 +277,12 @@ export function TabBar({
           ].join(' ')}
           style={{ left: dragGhost.x + 18, top: dragGhost.y + 22 }}
         >
+          <ExternalLink className="mr-1 inline h-3 w-3" aria-hidden />
           {dragGhost.mode === 'outside'
-            ? '↗ Release to open in new window'
+            ? 'Release to open in new window'
             : dragGhost.mode === 'terminal'
-            ? '⌘ Drop to type path in terminal'
-            : `↗ Drag — ${dragGhost.tab.filename}`}
+            ? 'Drop to type path in terminal'
+            : `Drag — ${dragGhost.tab.filename}`}
         </div>
       )}
 
@@ -293,22 +295,24 @@ export function TabBar({
         >
           {onTogglePin && (
             <MenuItem onClick={() => { onTogglePin(menu.tab); setMenu(null); }}>
-              {menu.tab.pinned ? '📌 Unpin tab' : '📌 Pin tab'}
+              {menu.tab.pinned
+                ? <><PinOff className="mr-1 inline h-3 w-3" aria-hidden /> Unpin tab</>
+                : <><Pin className="mr-1 inline h-3 w-3" aria-hidden /> Pin tab</>}
             </MenuItem>
           )}
           {onTearOff && (
             <MenuItem onClick={() => { onTearOff(menu.tab); setMenu(null); }}>
-              ↗ Move to new window
+              <ExternalLink className="mr-1 inline h-3 w-3" aria-hidden /> Move to new window
             </MenuItem>
           )}
           {onCopyPath && (
             <MenuItem onClick={() => { onCopyPath(menu.tab); setMenu(null); }}>
-              📋 Copy file path
+              <Clipboard className="mr-1 inline h-3 w-3" aria-hidden /> Copy file path
             </MenuItem>
           )}
           {onCopyFolderPath && (
             <MenuItem onClick={() => { onCopyFolderPath(menu.tab); setMenu(null); }}>
-              📁 Copy folder path
+              <FolderOpen className="mr-1 inline h-3 w-3" aria-hidden /> Copy folder path
             </MenuItem>
           )}
           {onCloseOthers && (

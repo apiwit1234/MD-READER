@@ -5,6 +5,7 @@ import { FileTree } from './FileTree';
 import { getApi, hasApi } from '@/lib/electron-api';
 import { filterTree, pruneToMarkdown } from '@/lib/filter';
 import { useAutoHideMenu } from '@/lib/useAutoHideMenu';
+import { ChevronDown, ChevronRight, Clipboard, RefreshCw, X } from 'lucide-react';
 
 type Props = {
   folder: OpenedFolder;
@@ -171,7 +172,7 @@ export function FolderSection({
           onClick={(e) => { e.stopPropagation(); setCollapsed((c) => !c); }}
           className="flex-shrink-0 text-muted hover:text-fg"
         >
-          {collapsed ? '▸' : '▾'}
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" aria-hidden /> : <ChevronDown className="h-3.5 w-3.5" aria-hidden />}
         </button>
         <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ background: folder.color }} aria-hidden />
         <span className="flex-1 truncate text-fg">{folder.name}</span>
@@ -183,7 +184,7 @@ export function FolderSection({
             onClick={(e) => { e.stopPropagation(); loadTree(); }}
             className="rounded p-0.5 text-muted hover:bg-surface-2 hover:text-fg"
           >
-            ⟳
+            <RefreshCw className="h-3 w-3" aria-hidden />
           </button>
         )}
         <button
@@ -192,7 +193,7 @@ export function FolderSection({
           onClick={(e) => { e.stopPropagation(); onClose(folder.id); }}
           className="rounded p-0.5 text-muted hover:bg-surface-2 hover:text-fg"
         >
-          ✕
+          <X className="h-3 w-3" aria-hidden />
         </button>
       </div>
       {menu && (
@@ -208,7 +209,7 @@ export function FolderSection({
               onClick={() => { onCopyFolderPath(folder.hostPath); setMenu(null); }}
               className="block w-full px-3 py-1.5 text-left text-xs text-fg hover:bg-surface-2"
             >
-              📋 Copy folder path
+              <Clipboard className="mr-1 inline h-3 w-3" aria-hidden /> Copy folder path
             </button>
           )}
           <button

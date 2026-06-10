@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import type { FsNode } from '@/types';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 type Props = {
   nodes: FsNode[];
@@ -65,7 +66,9 @@ function DirNode({
         className="flex w-full items-center gap-1 rounded px-1.5 py-0.5 text-left text-fg hover:bg-surface-2"
         style={{ paddingLeft: 4 + depth * 12 }}
       >
-        <span className="w-3 text-xs">{isOpen ? '▾' : '▸'}</span>
+        <span className="w-3 text-xs" aria-hidden>
+          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        </span>
         <span>{node.name}</span>
       </button>
       {isOpen && node.children && (

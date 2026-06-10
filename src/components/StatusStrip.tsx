@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { Clipboard } from 'lucide-react';
 
 type Props = {
   hostPath: string | null;
@@ -42,7 +43,7 @@ export function StatusStrip({ hostPath, hasActiveHighlight, onClearHighlight }: 
         aria-label="Copy path"
         className="ml-2 flex-shrink-0 rounded px-2 py-0.5 hover:bg-surface-2"
       >
-        📋 Copy path
+        <Clipboard className="mr-1 inline h-3 w-3" aria-hidden /> Copy path
       </button>
       {toast && (
         <div className="pointer-events-none absolute bottom-8 right-2 rounded bg-fg px-3 py-1 text-xs text-bg shadow">

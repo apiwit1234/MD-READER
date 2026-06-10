@@ -1,6 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import type { OpenedFolder, SearchResponse } from '@/types';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 export type OpenResultArg = {
   folderId: string;
@@ -153,7 +154,9 @@ export function SearchPanel({ query, caseSensitive = false, response, folders, o
                   onClick={() => setExpanded((e) => ({ ...e, [file.hostPath]: !isExpanded(file.hostPath) }))}
                   className="flex w-full items-center gap-2 px-3 py-1 text-left font-medium hover:bg-surface-2"
                 >
-                  <span className="w-3">{isExpanded(file.hostPath) ? '▾' : '▸'}</span>
+                  <span className="w-3" aria-hidden>
+                    {isExpanded(file.hostPath) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  </span>
                   <span style={{ color: attr?.folder.color ?? undefined }}>{attr ? `${attr.folder.name}/${attr.relativePath}` : file.hostPath}</span>
                   <span className="text-muted">({file.matches.length})</span>
                 </button>

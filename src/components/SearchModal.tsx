@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { OpenedFolder, SearchScope } from '@/types';
 import { loadSearchState, saveSearchState } from '@/lib/storage';
 import { pushHistory } from '@/lib/search-store';
+import { X } from 'lucide-react';
 
 type SearchSubmit = {
   query: string;
@@ -63,7 +64,7 @@ export function SearchModal({ open, folders, onClose, onSearch, busy = false }: 
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-2">
           <span className="text-sm font-medium">Search</span>
-          <button type="button" onClick={onClose} aria-label="Close search" className="text-muted hover:text-fg">✕</button>
+          <button type="button" onClick={onClose} aria-label="Close search" className="text-muted hover:text-fg"><X className="h-4 w-4" aria-hidden /></button>
         </div>
         <div className="space-y-3 p-4">
           <div className="relative">

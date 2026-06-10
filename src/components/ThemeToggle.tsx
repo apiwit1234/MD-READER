@@ -2,6 +2,7 @@
 import type { Theme } from '@/types';
 import { themeMeta } from '@/lib/themes';
 import { ThemeIcon } from './ThemeIcon';
+import { ArrowLeftRight } from 'lucide-react';
 
 type Props = {
   theme: Theme;
@@ -23,9 +24,9 @@ export function ThemeToggle({ theme, favorites, onChange }: Props) {
       <ThemeIcon name={meta.icon} />
       <span
         aria-hidden
-        className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[0.5rem] text-accent-fg"
+        className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-accent-fg"
       >
-        ⇄
+        <ArrowLeftRight className="h-2 w-2" />
       </span>
     </button>
   );
