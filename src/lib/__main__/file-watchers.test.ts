@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { createFileWatcherRegistry } = require('../../../electron/file-watchers.cjs');
 
 type Handler = (event: string, filename: string | null) => void;

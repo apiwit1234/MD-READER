@@ -4,6 +4,12 @@ Personal markdown reader desktop app (Electron + Next.js) with multi-folder
 navigation, interactive Mermaid diagrams, an embedded terminal, a Git panel,
 resizable panels, and Light / Dark / Cartoon themes.
 
+Mermaid support includes standalone `.mmd` / `.mermaid` files (opened as
+full-pane diagram tabs with a Source toggle) and instant re-render: saving an
+open file from any editor refreshes its tab in well under a second. When a
+diagram's source has a syntax error, the last good render stays visible with
+a "stale" badge and a collapsible error panel.
+
 ## Install (users)
 
 1. Download the latest `MD-Reader-X.Y.Z-x64.exe` from
