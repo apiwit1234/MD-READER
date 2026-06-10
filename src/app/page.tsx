@@ -34,9 +34,16 @@ import { CodeEditor } from '@/components/CodeEditor';
 import { GitPanel } from '@/components/GitPanel';
 import { DiffView } from '@/components/DiffView';
 import type { GitRepo, GitFileStatus } from '@/types';
+import { isMarkdownPath, isMermaidPath } from '@/lib/file-kinds';
 
 const MarkdownView = dynamic(
   () => import('@/components/MarkdownView').then((m) => m.MarkdownView),
+  { ssr: false },
+);
+
+// Wraps MermaidBlock (browser-only APIs), so client-side only like MarkdownView.
+const DiagramView = dynamic(
+  () => import('@/components/DiagramView').then((m) => m.DiagramView),
   { ssr: false },
 );
 
@@ -77,10 +84,10 @@ function loadViewFlags(): ViewFlags {
   }
 }
 
-/** Tabs visible in MD mode: markdown files plus synthetic mermaid/diff tabs. */
+/** Tabs visible in MD mode: markdown/diagram files plus synthetic mermaid/diff tabs. */
 function isMdVisible(t: { folderId: string; relativePath: string }): boolean {
   if (t.folderId === '__diagrams__' || t.folderId === '__diff__') return true;
-  return /\.(md|markdown)$/i.test(t.relativePath);
+  return /\.(md|markdown|mmd|mermaid)$/i.test(t.relativePath);
 }
 
 /** Absolute host path for a file inside an opened (non-virtual) folder. */
@@ -463,7 +470,7 @@ export default function Page() {
   }
 
   async function openFileShortcut(filePath: string) {
-    if (!filePath.toLowerCase().endsWith('.md')) return;
+    if (!isMarkdownPath(filePath) && !isMermaidPath(filePath)) return;
     const { dir, sep } = splitPath(filePath);
     // If an opened folder already contains this file, reuse it; otherwise add the parent dir as a folder.
     let parent = state.openedFolders.find(
@@ -957,9 +964,8 @@ export default function Page() {
       const cleared = s.openTabs.map((t) => ({ ...t, active: false }));
       return { ...s, openTabs: [...cleared, { folderId, relativePath, active: true }] };
     });
-    // Opening a non-markdown file in MD mode is meaningless; jump to Code mode.
-    const lower = relativePath.toLowerCase();
-    if (mode === 'md' && !lower.endsWith('.md') && !lower.endsWith('.markdown')) {
+    // Opening a non-markdown/diagram file in MD mode is meaningless; jump to Code mode.
+    if (mode === 'md' && !isMarkdownPath(relativePath) && !isMermaidPath(relativePath)) {
       setMode('code');
     }
   }
@@ -1388,19 +1394,30 @@ export default function Page() {
                     ) : activeTab ? (
                       <>
                         <div className="h-full" hidden={mode !== 'md'}>
-                          <MarkdownView
-                            content={(() => {
-                              const p = activeAbsPath();
-                              const b = p ? contentStoreRef.current.get(p) : undefined;
-                              return b !== undefined ? b : content;
-                            })()}
-                            theme={state.theme}
-                            onOpenMermaidInNewTab={openMermaidInNewTab}
-                            findBarOpen={findBarOpenForActive}
-                            onFindBarOpenChange={setFindBarOpenForActive}
-                            activeHighlight={activeHighlight}
-                            fontFamily={readingFontFamily}
-                          />
+                          {isMermaidPath(activeTab.relativePath) ? (
+                            <DiagramView
+                              source={(() => {
+                                const p = activeAbsPath();
+                                const b = p ? contentStoreRef.current.get(p) : undefined;
+                                return b !== undefined ? b : content;
+                              })()}
+                              theme={state.theme}
+                            />
+                          ) : (
+                            <MarkdownView
+                              content={(() => {
+                                const p = activeAbsPath();
+                                const b = p ? contentStoreRef.current.get(p) : undefined;
+                                return b !== undefined ? b : content;
+                              })()}
+                              theme={state.theme}
+                              onOpenMermaidInNewTab={openMermaidInNewTab}
+                              findBarOpen={findBarOpenForActive}
+                              onFindBarOpenChange={setFindBarOpenForActive}
+                              activeHighlight={activeHighlight}
+                              fontFamily={readingFontFamily}
+                            />
+                          )}
                         </div>
                         <div className="h-full" hidden={mode !== 'code'}>
                           {(() => {

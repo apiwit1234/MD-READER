@@ -306,7 +306,7 @@ async function walkMarkdownFiles(absRoot) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         await walk(full);
-      } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
+      } else if (entry.isFile() && /\.(md|markdown|mmd|mermaid)$/i.test(entry.name)) {
         results.push(full);
       }
     }
