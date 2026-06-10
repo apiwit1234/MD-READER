@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { BrowseResponse, RecentFolder } from '@/types';
 import { getApi } from '@/lib/electron-api';
+import { Folder, X } from 'lucide-react';
 
 type Props = {
   isOpen: boolean;
@@ -57,11 +58,11 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-[fadeIn_150ms_var(--ease)]" onClick={onClose}>
       <div
         role="dialog"
         aria-label="Open folder"
-        className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl bg-surface text-fg shadow-xl"
+        className="panel-float flex max-h-[80vh] w-full max-w-2xl flex-col text-fg animate-[popIn_180ms_var(--ease)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
@@ -74,7 +75,7 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
             >
               Native picker…
             </button>
-            <button onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-surface-2">✕</button>
+            <button onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-surface-2"><X className="h-4 w-4" aria-hidden /></button>
           </div>
         </div>
 
@@ -134,7 +135,7 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
                   className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-surface-2"
                   onClick={() => { if (data) setPath(joinPath(data.currentPath, e.name)); }}
                 >
-                  <span aria-hidden>📁</span>
+                  <Folder className="h-4 w-4 text-accent" aria-hidden />
                   <span>{e.name}</span>
                 </button>
               </li>
@@ -148,7 +149,7 @@ export function FolderPickerModal({ isOpen, onClose, onPick, recentFolders }: Pr
             type="button"
             onClick={() => data && onPick(data.currentPath)}
             disabled={!data}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-gradient rounded-theme-md px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
           >
             Open this folder
           </button>

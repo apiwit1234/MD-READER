@@ -2,7 +2,9 @@
 
 Personal markdown reader desktop app (Electron + Next.js) with multi-folder
 navigation, interactive Mermaid diagrams, an embedded terminal, a Git panel,
-resizable panels, and Light / Dark / Cartoon themes.
+resizable panels, and six themes: Light, Dark, Aurora, Nord, Sepia Paper and
+Dracula — every surface (diagrams, code editor, terminal, title bar) follows
+the active theme.
 
 Mermaid support includes standalone `.mmd` / `.mermaid` files (opened as
 full-pane diagram tabs with a Source toggle) and instant re-render: saving an

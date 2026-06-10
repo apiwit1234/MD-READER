@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 type Props = {
   query: string;
@@ -36,9 +37,9 @@ export function FindBar({ query, onQueryChange, total, currentIndex, onNext, onP
         className="w-48 rounded border border-border bg-surface-2 px-2 py-0.5 text-xs text-fg placeholder:text-muted focus:border-accent focus:outline-none"
       />
       <span className="min-w-[3rem] text-center font-mono text-[0.6875rem] text-muted">{display}</span>
-      <button type="button" onClick={onPrev} aria-label="Previous match" className="rounded p-0.5 hover:bg-surface-2">▲</button>
-      <button type="button" onClick={onNext} aria-label="Next match" className="rounded p-0.5 hover:bg-surface-2">▼</button>
-      <button type="button" onClick={onClose} aria-label="Close find" className="rounded p-0.5 text-muted hover:bg-surface-2">✕</button>
+      <button type="button" onClick={onPrev} aria-label="Previous match" className="rounded p-0.5 hover:bg-surface-2"><ChevronUp className="h-3.5 w-3.5" aria-hidden /></button>
+      <button type="button" onClick={onNext} aria-label="Next match" className="rounded p-0.5 hover:bg-surface-2"><ChevronDown className="h-3.5 w-3.5" aria-hidden /></button>
+      <button type="button" onClick={onClose} aria-label="Close find" className="rounded p-0.5 text-muted hover:bg-surface-2"><X className="h-3.5 w-3.5" aria-hidden /></button>
     </div>
   );
 }

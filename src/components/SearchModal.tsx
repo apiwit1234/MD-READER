@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { OpenedFolder, SearchScope } from '@/types';
 import { loadSearchState, saveSearchState } from '@/lib/storage';
 import { pushHistory } from '@/lib/search-store';
+import { X } from 'lucide-react';
 
 type SearchSubmit = {
   query: string;
@@ -56,14 +57,14 @@ export function SearchModal({ open, folders, onClose, onSearch, busy = false }: 
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/30 pt-24" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/30 pt-24 backdrop-blur-sm animate-[fadeIn_150ms_var(--ease)]" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-[480px] rounded-md border border-border bg-surface text-fg shadow-xl"
+        className="panel-float w-[480px] text-fg animate-[popIn_180ms_var(--ease)]"
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-2">
           <span className="text-sm font-medium">Search</span>
-          <button type="button" onClick={onClose} aria-label="Close search" className="text-muted hover:text-fg">✕</button>
+          <button type="button" onClick={onClose} aria-label="Close search" className="text-muted hover:text-fg"><X className="h-4 w-4" aria-hidden /></button>
         </div>
         <div className="space-y-3 p-4">
           <div className="relative">
@@ -124,7 +125,7 @@ export function SearchModal({ open, folders, onClose, onSearch, busy = false }: 
             type="button"
             disabled={!query || busy}
             onClick={submit}
-            className="rounded bg-accent px-3 py-1 text-sm font-medium text-accent-fg hover:bg-accent/90 disabled:bg-surface-2 disabled:text-muted"
+            className="btn-gradient rounded-theme-sm px-3 py-1 text-sm font-medium disabled:bg-none disabled:bg-surface-2 disabled:text-muted"
           >
             {busy ? 'Searching…' : 'Search'}
           </button>

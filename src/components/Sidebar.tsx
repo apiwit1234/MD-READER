@@ -6,6 +6,7 @@ import { FolderSection } from './FolderSection';
 import { SidebarFilter } from './SidebarFilter';
 import { filterTree } from '@/lib/filter';
 import { subscribeReveal } from '@/lib/sidebar-events';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import {
   getDroppedEntries,
   processDroppedEntry,
@@ -169,16 +170,19 @@ export function Sidebar({
             className="flex items-center gap-1 text-xs font-semibold text-fg"
             aria-expanded={!openBlockCollapsed}
           >
-            <span className="text-muted">{openBlockCollapsed ? '▸' : '▾'}</span> Open folder
+            <span className="text-muted" aria-hidden>
+              {openBlockCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </span>{' '}
+            Open folder
           </button>
           {openBlockCollapsed && (
             <button
               type="button"
               onClick={onOpenFolderClick}
               aria-label="Open folder"
-              className="rounded bg-accent px-2 py-0.5 text-xs font-medium text-accent-fg hover:bg-accent/90"
+              className="btn-gradient rounded px-2 py-0.5 text-xs font-medium"
             >
-              +
+              <Plus className="h-3.5 w-3.5" aria-hidden />
             </button>
           )}
         </div>
@@ -187,7 +191,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={onOpenFolderClick}
-              className="mt-2 w-full rounded-lg bg-accent px-3 py-2 text-sm font-medium text-accent-fg hover:bg-accent/90"
+              className="btn-gradient mt-2 w-full rounded-theme-md px-3 py-2 text-sm font-medium"
             >
               + Open folder
             </button>

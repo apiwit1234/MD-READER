@@ -7,15 +7,16 @@ import { FontsSection } from './settings/FontsSection';
 import { BehaviorSection } from './settings/BehaviorSection';
 import { UpdatesSection } from './settings/UpdatesSection';
 import { AdvancedSection } from './settings/AdvancedSection';
+import { MousePointer, Palette, RefreshCw, Type, Wrench, X, type LucideIcon } from 'lucide-react';
 
 type SettingsCategory = 'appearance' | 'fonts' | 'behavior' | 'updates' | 'advanced';
 
-const CATEGORIES: { id: SettingsCategory; label: string; icon: string }[] = [
-  { id: 'appearance', label: 'Appearance', icon: '🎨' },
-  { id: 'fonts', label: 'Fonts', icon: '🔤' },
-  { id: 'behavior', label: 'Behavior', icon: '🖱️' },
-  { id: 'updates', label: 'Updates', icon: '🔄' },
-  { id: 'advanced', label: 'Advanced', icon: '🛠️' },
+const CATEGORIES: { id: SettingsCategory; label: string; icon: LucideIcon }[] = [
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'fonts', label: 'Fonts', icon: Type },
+  { id: 'behavior', label: 'Behavior', icon: MousePointer },
+  { id: 'updates', label: 'Updates', icon: RefreshCw },
+  { id: 'advanced', label: 'Advanced', icon: Wrench },
 ];
 
 type Props = {
@@ -59,11 +60,11 @@ export function SettingsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-[fadeIn_150ms_var(--ease)]"
       onClick={onClose}
     >
       <div
-        className="flex h-[min(70vh,640px)] w-full max-w-3xl overflow-hidden rounded-theme bg-surface text-fg shadow-xl"
+        className="panel-float flex h-[min(70vh,640px)] w-full max-w-3xl overflow-hidden text-fg animate-[popIn_180ms_var(--ease)]"
         onClick={(e) => e.stopPropagation()}
       >
         <nav className="flex w-44 shrink-0 flex-col gap-0.5 border-r border-border p-2">
@@ -84,7 +85,7 @@ export function SettingsModal({
                 category === c.id ? 'bg-accent-soft font-medium text-accent' : 'text-fg hover:bg-surface-2',
               ].join(' ')}
             >
-              <span aria-hidden>{c.icon}</span> {c.label}
+              <c.icon className="h-4 w-4" aria-hidden /> {c.label}
             </button>
           ))}
         </nav>
@@ -97,7 +98,7 @@ export function SettingsModal({
               aria-label="Close settings"
               className="rounded-theme p-1 text-muted hover:bg-surface-2"
             >
-              ✕
+              <X className="h-4 w-4" aria-hidden />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-5">

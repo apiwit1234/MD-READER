@@ -1,4 +1,5 @@
 'use client';
+import { X } from 'lucide-react';
 
 type Props = {
   value: string;
@@ -22,7 +23,7 @@ export function SidebarFilter({ value, onChange }: Props) {
           onClick={() => onChange('')}
           className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-xs text-muted hover:bg-surface-2 hover:text-fg"
         >
-          ✕
+          <X className="h-3 w-3" aria-hidden />
         </button>
       )}
     </div>

@@ -23,7 +23,7 @@ describe('storage', () => {
   it('round-trips state', () => {
     const s = defaultState();
     s.theme = 'dark';
-    s.themeFavorites = ['cartoon-light', 'dark'];
+    s.themeFavorites = ['aurora', 'dark'];
     s.openedFolders.push({
       id: 'abc',
       hostPath: 'C:\\x',
@@ -45,8 +45,8 @@ describe('storage', () => {
     expect(loadState()).toEqual(defaultState());
   });
 
-  it('accepts all four themes', () => {
-    for (const theme of ['light', 'dark', 'cartoon-light', 'cartoon-dark'] as const) {
+  it('accepts all six themes', () => {
+    for (const theme of ['light', 'dark', 'aurora', 'nord', 'sepia', 'dracula'] as const) {
       const s = defaultState();
       s.theme = theme;
       saveState(s);
@@ -56,7 +56,7 @@ describe('storage', () => {
 
   it('migrates removed themes by base WITHOUT resetting the rest of the state', () => {
     const folders = [{ id: 'abc', hostPath: 'C:\\x', name: 'x', color: '#2563eb', expanded: true }];
-    for (const [legacy, expected] of [['space', 'dark'], ['retro', 'light'], ['moneh', 'light']] as const) {
+    for (const [legacy, expected] of [['space', 'dark'], ['retro', 'light'], ['moneh', 'light'], ['cartoon-light', 'light'], ['cartoon-dark', 'dark']] as const) {
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({ theme: legacy, openedFolders: folders, openTabs: [], recentFolders: [], themeFavorites: ['light', 'dark'] }),
@@ -179,7 +179,7 @@ describe('clearedState', () => {
   it('clears folders and tabs but keeps theme, favorites and recents', () => {
     const prev: AppState = {
       theme: 'dark',
-      themeFavorites: ['dark', 'cartoon-light'],
+      themeFavorites: ['dark', 'sepia'],
       openedFolders: [{ id: 'f1', hostPath: 'C:/docs', name: 'docs', color: '#f00', expanded: true }],
       openTabs: [{ folderId: 'f1', relativePath: 'a.md', active: true }],
       recentFolders: [{ hostPath: 'C:/docs', lastOpenedAt: 123 }],
@@ -188,7 +188,7 @@ describe('clearedState', () => {
     expect(next.openedFolders).toEqual([]);
     expect(next.openTabs).toEqual([]);
     expect(next.theme).toBe('dark');
-    expect(next.themeFavorites).toEqual(['dark', 'cartoon-light']);
+    expect(next.themeFavorites).toEqual(['dark', 'sepia']);
     expect(next.recentFolders).toEqual([{ hostPath: 'C:/docs', lastOpenedAt: 123 }]);
   });
 

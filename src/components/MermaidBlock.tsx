@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import svgPanZoom from 'svg-pan-zoom';
 import type { Theme } from '@/types';
-import { themeMode } from '@/lib/themes';
+import { themeMeta } from '@/lib/themes';
+import { Clipboard, ExternalLink, Maximize2, RotateCcw, X } from 'lucide-react';
 import { normalizeMermaidEntities } from '@/lib/mermaid-entities';
 import { normalizeMermaidSource } from '@/lib/mermaid-normalize';
 import { getApi, hasApi } from '@/lib/electron-api';
@@ -129,9 +130,11 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
+    const meta = themeMeta(theme);
     mermaid.initialize({
       startOnLoad: false,
-      theme: themeMode(theme) === 'dark' ? 'dark' : 'default',
+      theme: meta.mermaid.theme,
+      themeVariables: meta.mermaid.themeVariables,
       securityLevel: 'strict',
     });
     let cancelled = false;
@@ -215,7 +218,7 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
             className="rounded border border-red-300 px-2 py-0.5 text-xs hover:bg-red-100 dark:border-red-700 dark:hover:bg-red-900"
             aria-label="Copy diagram source"
           >
-            📋 Copy source
+            <Clipboard className="mr-1 inline h-3 w-3" aria-hidden /> Copy source
           </button>
         </div>
         <div className="mt-1 font-mono text-xs">{renderError}</div>
@@ -253,7 +256,7 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
               className="rounded px-2 py-0.5 hover:bg-surface-2"
               aria-label="Reset diagram view"
             >
-              ⟳
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden />
             </button>
             {onOpenInNewTab && (
               <button
@@ -263,7 +266,7 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
                 aria-label="Open diagram in new tab"
                 title="Open in new tab"
               >
-                ↗
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
               </button>
             )}
             <button
@@ -272,7 +275,7 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
               className="rounded px-2 py-0.5 hover:bg-surface-2"
               aria-label="Open fullscreen diagram"
             >
-              ⛶
+              <Maximize2 className="h-3.5 w-3.5" aria-hidden />
             </button>
           </div>
         </div>
@@ -305,7 +308,7 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
                 className="rounded px-2 py-1 hover:bg-surface-2"
                 aria-label="Close fullscreen"
               >
-                ✕
+                <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
           </div>

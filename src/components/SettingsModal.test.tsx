@@ -40,19 +40,19 @@ describe('SettingsModal', () => {
     for (const c of ['Appearance', 'Fonts', 'Behavior', 'Updates', 'Advanced']) {
       expect(screen.getByRole('button', { name: c })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole('button', { name: /^Select .* theme$/ })).toHaveLength(4);
+    expect(screen.getAllByRole('button', { name: /^Select .* theme$/ })).toHaveLength(6);
   });
 
   it('marks the active theme card as pressed', () => {
-    setup({ theme: 'cartoon-dark' });
-    expect(screen.getByRole('button', { name: /select cartoon dark theme/i })).toHaveAttribute('aria-pressed', 'true');
+    setup({ theme: 'dracula' });
+    expect(screen.getByRole('button', { name: /select dracula theme/i })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('calls onSelectTheme when a card is clicked', async () => {
     const user = userEvent.setup();
     const props = setup();
-    await user.click(screen.getByRole('button', { name: /select cartoon light theme/i }));
-    expect(props.onSelectTheme).toHaveBeenCalledWith('cartoon-light');
+    await user.click(screen.getByRole('button', { name: /select aurora theme/i }));
+    expect(props.onSelectTheme).toHaveBeenCalledWith('aurora');
   });
 
   it('updates favorite 1 and avoids duplicating favorite 2', async () => {

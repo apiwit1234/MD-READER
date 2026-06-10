@@ -2,6 +2,7 @@
 import type { Theme } from '@/types';
 import { THEMES } from '@/lib/themes';
 import type { AppSettings, UiSize } from '@/lib/electron-api';
+import { ThemeIcon } from '@/components/ThemeIcon';
 
 type Props = {
   theme: Theme;
@@ -45,7 +46,7 @@ export function AppearanceSection({ theme, favorites, onSelectTheme, onSetFavori
             ].join(' ')}
           >
             <div className="flex items-center gap-1.5 text-sm font-semibold">
-              <span aria-hidden>{t.icon}</span> {t.label}
+              <ThemeIcon name={t.icon} /> {t.label}
             </div>
             <div className="mt-2 flex h-4 overflow-hidden rounded">
               {t.swatch.map((c, i) => (
@@ -73,7 +74,7 @@ export function AppearanceSection({ theme, favorites, onSelectTheme, onSetFavori
             >
               {THEMES.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.icon} {t.label}
+                  {t.label}
                 </option>
               ))}
             </select>
