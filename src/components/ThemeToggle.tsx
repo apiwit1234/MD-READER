@@ -1,6 +1,7 @@
 'use client';
 import type { Theme } from '@/types';
 import { themeMeta } from '@/lib/themes';
+import { ThemeIcon } from './ThemeIcon';
 
 type Props = {
   theme: Theme;
@@ -19,7 +20,7 @@ export function ThemeToggle({ theme, favorites, onChange }: Props) {
       title={`Switch to ${meta.label}`}
       className="relative rounded-theme p-2 text-muted hover:bg-surface-2"
     >
-      <span aria-hidden>{meta.icon}</span>
+      <ThemeIcon name={meta.icon} />
       <span
         aria-hidden
         className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[0.5rem] text-accent-fg"
