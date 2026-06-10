@@ -83,6 +83,12 @@ function isMdVisible(t: { folderId: string; relativePath: string }): boolean {
   return /\.(md|markdown)$/i.test(t.relativePath);
 }
 
+/** Absolute host path for a file inside an opened (non-virtual) folder. */
+function joinHostPath(hostPath: string, relativePath: string): string {
+  const sep = hostPath.includes('\\') ? '\\' : '/';
+  return hostPath + sep + relativePath.replace(/\//g, sep);
+}
+
 export default function Page() {
   const [state, setState] = useState<AppState>(() => defaultState());
   const [hydrated, setHydrated] = useState(false);
@@ -246,6 +252,9 @@ export default function Page() {
   const conflictToastRef = useRef<Record<string, string>>({});
   // Reassigned every render so the IPC subscription always sees fresh state.
   const liveReloadRef = useRef<(root: string) => void>(() => {});
+  // Refresh one absolute path from disk (folder-level live reload for the
+  // active file + per-file watcher for any open tab). Also a render-fresh ref.
+  const refreshPathRef = useRef<(absPath: string) => void>(() => {});
   // Tabs currently refreshing from an external disk change (spinner in TabBar).
   const [updatingPaths, setUpdatingPaths] = useState<Record<string, boolean>>({});
   // Bump to force a re-render when dirty state changes (the store itself is a ref).
@@ -280,6 +289,30 @@ export default function Page() {
     return () => { roots.forEach((r) => { void getApi().fs.unwatch(r); }); };
   }, [watchKey]);
 
+  // Per-file watchers: every real-file open tab gets instant change events
+  // (150ms debounce in the main process vs 1200ms for the folder watcher).
+  const tabFileKey = state.openTabs
+    .filter((t) => !t.kind || t.kind === 'file')
+    .map((t) => {
+      const f = state.openedFolders.find((x) => x.id === t.folderId);
+      return f && !f.isVirtual ? joinHostPath(f.hostPath, t.relativePath) : null;
+    })
+    .filter((p): p is string => !!p)
+    .join('|');
+  useEffect(() => {
+    if (!hasApi() || !tabFileKey) return;
+    const paths = tabFileKey.split('|');
+    paths.forEach((p) => { void getApi().fs.watchFile(p); });
+    return () => { paths.forEach((p) => { void getApi().fs.unwatchFile(p); }); };
+  }, [tabFileKey]);
+
+  // One-time subscription to per-file watcher events.
+  useEffect(() => {
+    if (!hasApi()) return;
+    const off = getApi().fs.onFileChanged((absPath) => refreshPathRef.current(absPath));
+    return () => { off(); };
+  }, []);
+
   // Live-reload handler: kept in a ref (reassigned every render) so the
   // one-time IPC subscription below always calls the latest version with
   // fresh state.
@@ -304,44 +337,52 @@ export default function Page() {
       if (p !== activeAbs && isUnderRoot(p, root)) store.dropIfClean(p);
     }
 
-    // 3) Refresh the active file when it lives under this root. The tab shows
-    //    a spinner from now until the refreshed view commits; the heavy
-    //    preview re-render runs in a transition so the UI never blocks.
+    // 3) Refresh the active file when it lives under this root. (Per-file
+    //    watchers refresh open tabs directly; this folder-level path remains
+    //    the fallback for the active file.)
     if (!activeAbs || !isUnderRoot(activeAbs, root)) return;
-    setUpdatingPaths((u) => (u[activeAbs] ? u : { ...u, [activeAbs]: true }));
+    refreshPathRef.current(activeAbs);
+  };
+
+  // Re-read one path from disk and reconcile cache/buffer/view. The tab shows
+  // a spinner from now until the refreshed view commits; the heavy preview
+  // re-render runs in a transition so the UI never blocks.
+  refreshPathRef.current = (absPath: string) => {
+    if (!hasApi()) return;
+    const store = contentStoreRef.current;
+    setUpdatingPaths((u) => (u[absPath] ? u : { ...u, [absPath]: true }));
     const clearUpdating = () =>
       setUpdatingPaths((u) => {
-        if (!u[activeAbs]) return u;
+        if (!u[absPath]) return u;
         const next = { ...u };
-        delete next[activeAbs];
+        delete next[absPath];
         return next;
       });
-    getApi().fs.read(activeAbs)
+    getApi().fs.read(absPath)
       .then((d) => {
-        const known = contentCache[activeAbs]?.content;
+        const known = contentCache[absPath]?.content;
         const buffer: BufferState =
-          store.get(activeAbs) === undefined ? 'none' : store.isDirty(activeAbs) ? 'dirty' : 'clean';
+          store.get(absPath) === undefined ? 'none' : store.isDirty(absPath) ? 'dirty' : 'clean';
         const action = reloadAction(d.content, known, buffer);
         if (action === 'ignore') {
           clearUpdating();
           return;
         }
         if (action === 'refresh') {
-          store.replaceIfClean(activeAbs, d.content);
-          // Low-priority render: markdown re-parse + mermaid re-render happen
-          // in the background; the spinner disappears in the same commit that
-          // shows the new content.
+          store.replaceIfClean(absPath, d.content);
           startTransition(() => {
-            setContentCache((c) => ({ ...c, [activeAbs]: { content: d.content, hostPath: d.hostPath } }));
-            setContent(d.content);
-            setFileRevisions((r) => ({ ...r, [activeAbs]: (r[activeAbs] ?? 0) + 1 }));
+            setContentCache((c) => ({ ...c, [absPath]: { content: d.content, hostPath: d.hostPath } }));
+            // Only the visible file drives the content view; background tabs
+            // just get their cache/buffer refreshed.
+            if (absPath === activeAbsPath()) setContent(d.content);
+            setFileRevisions((r) => ({ ...r, [absPath]: (r[absPath] ?? 0) + 1 }));
             clearUpdating();
           });
         } else {
-          setContentCache((c) => ({ ...c, [activeAbs]: { content: d.content, hostPath: d.hostPath } }));
+          setContentCache((c) => ({ ...c, [absPath]: { content: d.content, hostPath: d.hostPath } }));
           clearUpdating();
-          if (conflictToastRef.current[activeAbs] !== d.content) {
-            conflictToastRef.current[activeAbs] = d.content;
+          if (conflictToastRef.current[absPath] !== d.content) {
+            conflictToastRef.current[absPath] = d.content;
             showToast('File changed on disk — your unsaved edits are kept');
           }
         }
