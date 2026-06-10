@@ -54,8 +54,6 @@ export function TabBar({
   const menuHide = useAutoHideMenu(menuAutoHide ?? true, !!menu, () => setMenu(null));
   const listHide = useAutoHideMenu(menuAutoHide ?? true, listOpen, () => setListOpen(false));
   const [dragGhost, setDragGhost] = useState<{ tab: TabView; x: number; y: number; mode: 'inside' | 'outside' | 'terminal' } | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const activeRef = useRef<HTMLDivElement | null>(null);
   const dropdownWrapRef = useRef<HTMLDivElement | null>(null);
 
   function isOutsideWindow(screenX: number, screenY: number): boolean {
@@ -143,11 +141,6 @@ export function TabBar({
     };
   }, [menu]);
 
-  // Scroll the active tab into view when activation changes.
-  useEffect(() => {
-    if (activeRef.current) activeRef.current.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [tabs]);
-
   useEffect(() => {
     if (!listOpen) return;
     const onClick = (e: MouseEvent) => {
@@ -169,25 +162,25 @@ export function TabBar({
   return (
     <>
       <div className="flex items-center border-b border-border bg-surface">
+        {/* Browser-style tabs: each tab takes up to its basis width when there
+            is room and shrinks (truncating the name) as tabs are added — the
+            strip itself never scrolls. The ▾ dropdown lists everything. */}
         <div
-          ref={scrollRef}
           role="tablist"
-          className="flex flex-1 overflow-x-auto whitespace-nowrap"
-          style={{ scrollbarWidth: 'thin' }}
+          className="flex min-w-0 flex-1 overflow-hidden"
         >
           {tabs.map((t) => (
             <div
               key={`${t.folderId}::${t.relativePath}`}
               role="tab"
               aria-selected={t.active}
-              ref={t.active ? activeRef : undefined}
               onClick={() => onFocus(t)}
               onContextMenu={(e) => openMenu(e, t)}
               onMouseDown={onTearOff ? (e) => startTearDrag(e, t) : undefined}
               title={t.relativePath}
               className={[
-                'relative flex shrink-0 cursor-pointer select-none items-center gap-2 border-r border-border px-3 py-2 text-sm',
-                t.pinned ? 'max-w-[160px]' : 'max-w-[220px]',
+                'relative flex min-w-0 cursor-pointer select-none items-center gap-2 border-r border-border px-3 py-2 text-sm',
+                t.pinned ? 'flex-[0_1_160px]' : 'flex-[0_1_220px]',
                 t.active ? 'bg-bg text-fg' : 'text-muted hover:bg-surface-2',
               ].join(' ')}
             >
