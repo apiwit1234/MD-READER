@@ -14,18 +14,20 @@ a "stale" badge and a collapsible error panel.
 
 ## Install (users)
 
-1. Download the latest `MD-Reader-X.Y.Z-x64.exe` from
+1. Download `PAXReader-win-Setup.exe` from
    [GitHub Releases](https://github.com/apiwit1234/MD-READER/releases).
-2. Run it. The installer lets you:
-   - choose the install folder (default: `%LOCALAPPDATA%\Programs\MD Reader`)
-   - tick/untick **Create a desktop shortcut**
-3. Done. A Start Menu entry is always created.
+2. Run it — no prerequisites, no admin rights. It installs to
+   `%LOCALAPPDATA%\PAXReader` and creates a Start Menu entry.
 
-**Updates are automatic**: the app checks GitHub Releases shortly after
-launch, downloads new versions in the background, and installs them when you
-close the app. Disable or trigger manually in **Settings → Updates**.
-Reinstalling or updating never touches your settings (they live in
-`%APPDATA%`).
+**Updates are small patches, not reinstalls**: the app checks GitHub
+Releases shortly after launch and downloads only a delta (usually a few MB)
+in the background. Click "Restart & Update" to apply immediately, or it
+applies automatically on the next launch. Manual check, download progress
+and the auto-update toggle live in **Settings → Updates**. Updating never
+touches your settings (they live in `%APPDATA%`).
+
+Upgrading from an old NSIS install (≤ v1.0.x)? The app shows a one-click
+"Upgrade now" banner that switches you to the new update system.
 
 > Windows SmartScreen may warn on first install — builds are unsigned.
 > Click "More info" → "Run anyway".
