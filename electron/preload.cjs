@@ -18,6 +18,13 @@ contextBridge.exposeInMainWorld('mdreader', {
       ipcRenderer.on('fs:changed', listener);
       return () => ipcRenderer.removeListener('fs:changed', listener);
     },
+    watchFile: (absPath) => ipcRenderer.invoke('fs:watchFile', absPath),
+    unwatchFile: (absPath) => ipcRenderer.invoke('fs:unwatchFile', absPath),
+    onFileChanged: (cb) => {
+      const listener = (_e, absPath) => cb(absPath);
+      ipcRenderer.on('fs:fileChanged', listener);
+      return () => ipcRenderer.removeListener('fs:fileChanged', listener);
+    },
   },
   term: {
     spawn: (opts) => ipcRenderer.invoke('term:spawn', opts),

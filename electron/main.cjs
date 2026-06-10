@@ -418,6 +418,28 @@ ipcMain.handle('fs:unwatch', (_e, absPath) => {
   }
 });
 
+// Per-open-tab file watchers: instant (150ms) save-to-render path, separate
+// from the 1200ms folder watcher above that refreshes trees.
+const { createFileWatcherRegistry } = require('./file-watchers.cjs');
+
+const fileWatchers = createFileWatcherRegistry({
+  watchFn: fsWatch,
+  debounceMs: 150,
+  onChange: (absPath) => {
+    for (const w of BrowserWindow.getAllWindows()) {
+      try { w.webContents.send('fs:fileChanged', absPath); } catch {}
+    }
+  },
+});
+
+ipcMain.handle('fs:watchFile', (_e, absPath) => {
+  if (typeof absPath !== 'string' || !absPath) return false;
+  return fileWatchers.watch(absPath);
+});
+ipcMain.handle('fs:unwatchFile', (_e, absPath) => {
+  if (typeof absPath === 'string' && absPath) fileWatchers.unwatch(absPath);
+});
+
 ipcMain.handle('fs:pickDirectory', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],

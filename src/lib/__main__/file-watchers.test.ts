@@ -15,8 +15,8 @@ function makeFakeWatch() {
 }
 
 describe('createFileWatcherRegistry', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
 
   it('debounces change events to a single callback', () => {
     const { handlers, watchFn } = makeFakeWatch();
