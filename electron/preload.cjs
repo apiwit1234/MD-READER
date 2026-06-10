@@ -118,6 +118,10 @@ contextBridge.exposeInMainWorld('mdreader', {
       return () => ipcRenderer.removeListener('app:update-progress', listener);
     },
   },
+  migrate: {
+    detect: () => ipcRenderer.invoke('migrate:detect'),
+    run: () => ipcRenderer.invoke('migrate:run'),
+  },
   fileUtil: {
     // Returns the absolute host path for a File obtained from drag-and-drop, or null on failure.
     pathForFile: (file) => {

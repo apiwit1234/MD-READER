@@ -598,14 +598,33 @@ export default function Page() {
     if (!hasApi()) return;
     const off = getApi().update.onUpdateReady((version) => {
       setUpdateReady(version);
-      showToast(`Update v${version} downloaded — restart MD Reader to apply`, 6000);
+      showToast(`Update v${version} downloaded — restart PAX Reader to apply`, 6000);
     });
     void getApi().app.versionInfo().then((info) => {
-      if (info.updatedFrom) showToast(`MD Reader updated to v${info.current} ✓`, 6000);
+      if (info.updatedFrom) showToast(`PAX Reader updated to v${info.current} ✓`, 6000);
     });
     return () => { off(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // One-time NSIS → Velopack migration offer (banner above the tab bar).
+  const [migrateOffer, setMigrateOffer] = useState<'hidden' | 'offer' | 'running'>('hidden');
+  useEffect(() => {
+    if (!hasApi()) return;
+    getApi().migrate.detect()
+      .then((kind) => { if (kind === 'nsis') setMigrateOffer('offer'); })
+      .catch(() => {});
+  }, []);
+
+  function runMigration() {
+    setMigrateOffer('running');
+    void getApi().migrate.run().then((r) => {
+      if (!r.ok) {
+        setMigrateOffer('offer');
+        showToast(`Upgrade failed: ${r.error ?? 'unknown error'} — you can retry anytime`, 6000);
+      }
+    });
+  }
 
   // Warn before closing the window with unsaved editor buffers.
   useEffect(() => {
@@ -1366,6 +1385,28 @@ export default function Page() {
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4" />
                         <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
                       </svg>
+                    </div>
+                  )}
+                  {migrateOffer !== 'hidden' && (
+                    <div className="flex items-center justify-between gap-3 border-b border-border bg-accent-soft px-3 py-1.5 text-xs text-fg">
+                      <span className="min-w-0 truncate">
+                        {migrateOffer === 'running'
+                          ? 'Upgrading — the app will restart by itself…'
+                          : 'PAX Reader is switching to a faster update system (small patch updates, no reinstall).'}
+                      </span>
+                      {migrateOffer === 'offer' && (
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <button type="button" onClick={runMigration}
+                            className="btn-gradient rounded-theme-sm px-2.5 py-1 font-medium">
+                            Upgrade now
+                          </button>
+                          <button type="button" onClick={() => setMigrateOffer('hidden')}
+                            aria-label="Dismiss upgrade banner"
+                            className="rounded-theme-sm px-2 py-1 text-muted hover:bg-surface-2">
+                            Later
+                          </button>
+                        </span>
+                      )}
                     </div>
                   )}
                   {viewFlags.tabBar && (
