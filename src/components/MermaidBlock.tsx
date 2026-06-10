@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import svgPanZoom from 'svg-pan-zoom';
 import type { Theme } from '@/types';
-import { themeMode } from '@/lib/themes';
+import { themeMeta } from '@/lib/themes';
 import { normalizeMermaidEntities } from '@/lib/mermaid-entities';
 import { normalizeMermaidSource } from '@/lib/mermaid-normalize';
 import { getApi, hasApi } from '@/lib/electron-api';
@@ -129,9 +129,11 @@ export function MermaidBlock({ source, theme, onOpenInNewTab, onRendered }: Prop
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
+    const meta = themeMeta(theme);
     mermaid.initialize({
       startOnLoad: false,
-      theme: themeMode(theme) === 'dark' ? 'dark' : 'default',
+      theme: meta.mermaid.theme,
+      themeVariables: meta.mermaid.themeVariables,
       securityLevel: 'strict',
     });
     let cancelled = false;

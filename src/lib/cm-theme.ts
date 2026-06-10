@@ -35,31 +35,25 @@ const darkHighlight = HighlightStyle.define([
 ]);
 
 /** Editor chrome theme + syntax highlighting for the given light/dark mode.
- *  Background is transparent so the editor inherits the active app theme's bg. */
+ *  Chrome colors come from the design tokens (CSS variables resolve at paint
+ *  time), so the editor surface matches whichever of the 6 app themes is
+ *  active; only the syntax palette switches on the light/dark base. */
 export function editorTheme(mode: 'light' | 'dark'): Extension {
-  // The code area gets its own dedicated surface (GitHub light/dark) so contrast
-  // is guaranteed regardless of the surrounding app theme's colors.
   const dark = mode === 'dark';
-  const bg = dark ? '#0d1117' : '#ffffff';
-  const fg = dark ? '#c9d1d9' : '#24292e';
-  const gutterBg = dark ? '#0d1117' : '#ffffff';
-  const gutter = dark ? '#6e7681' : '#9aa0a6';
-  const activeLine = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
-  const selection = dark ? 'rgba(56,139,253,0.35)' : 'rgba(3,102,214,0.20)';
   return [
     EditorView.theme(
       {
-        '&': { backgroundColor: bg, color: fg, height: '100%' },
+        '&': { backgroundColor: 'rgb(var(--c-bg))', color: 'rgb(var(--c-fg))', height: '100%' },
         '.cm-scroller': { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' },
-        '.cm-content': { caretColor: fg },
-        '.cm-cursor, .cm-dropCursor': { borderLeftColor: fg },
-        '.cm-gutters': { backgroundColor: gutterBg, border: 'none', color: gutter },
-        '.cm-activeLine': { backgroundColor: activeLine },
-        '.cm-activeLineGutter': { backgroundColor: activeLine, color: fg },
+        '.cm-content': { caretColor: 'rgb(var(--c-accent))' },
+        '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'rgb(var(--c-accent))' },
+        '.cm-gutters': { backgroundColor: 'rgb(var(--c-surface))', border: 'none', color: 'rgb(var(--c-muted))' },
+        '.cm-activeLine': { backgroundColor: 'rgb(var(--c-surface-2) / 0.6)' },
+        '.cm-activeLineGutter': { backgroundColor: 'rgb(var(--c-surface-2))', color: 'rgb(var(--c-fg))' },
         '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-          backgroundColor: selection,
+          backgroundColor: 'rgb(var(--c-accent-soft))',
         },
-        '.cm-foldGutter span': { color: gutter },
+        '.cm-foldGutter span': { color: 'rgb(var(--c-muted))' },
       },
       { dark },
     ),
