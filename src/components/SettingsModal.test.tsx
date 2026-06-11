@@ -76,13 +76,13 @@ describe('SettingsModal', () => {
     expect(screen.getByLabelText('Auto-hide context menus')).toBeInTheDocument();
   });
 
-  it('renders the Updates section with the automatic-updates toggle', async () => {
+  it('renders the Updates section with the startup-check toggle', async () => {
     const user = userEvent.setup();
     setup();
     await user.click(screen.getByRole('button', { name: 'Updates' }));
     // No electron bridge in tests -> controls are disabled.
-    expect(screen.getByRole('checkbox', { name: /automatic updates/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /check for updates/i })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /check for updates at startup/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^check for updates$/i })).toBeDisabled();
   });
 
   it('reset requires a confirm click', async () => {

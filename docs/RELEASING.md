@@ -57,30 +57,45 @@ restart — no installer re-run. End users never need any tools installed.
 - **Install:** download `PAXReader-win-Setup.exe` from GitHub Releases and
   run it. No prerequisites, no admin rights. Installs to
   `%LOCALAPPDATA%\PAXReader`.
-- **Update (automatic, default):** the app checks ~10 s after launch,
-  downloads the delta in the background, and shows a toast. "Restart &
-  Update" applies it immediately; otherwise it applies automatically on the
-  next launch. Settings → Updates has a manual Check / Download / Restart
-  flow with a progress bar.
+- **Update (user-approved, never silent):** the app checks ~10 s after
+  launch (toggle: Settings → Updates → "Check for updates at startup") and
+  shows a bottom-right card — "Update vX available · Update now / Close".
+  Nothing downloads or installs without a click. "Update now" downloads the
+  delta with a progress bar, then shows an "installing — don't shut down
+  your computer" notice while the app restarts itself. Settings → Updates
+  has the same manual Check / Download / Restart & Update flow.
 - **Portable .exe** (`npm run dist:portable`): no auto-update; download new
   versions manually.
 - Settings, fonts and logs live in `%APPDATA%\md-reader` and survive every
   install, update and uninstall.
 
-## Testing updates locally (no GitHub)
+## Testing updates locally (no GitHub, no code changes)
 
-`UpdateManager` accepts a local directory as the feed:
+The feed URL is resolved at runtime: `PAX_UPDATE_URL` env var →
+`%APPDATA%\md-reader\update-feed.txt` → GitHub default. To point any
+installed build at a local feed:
 
 1. `npm run release:pack`, copy `release/velopack/*` to `C:\temp\paxfeed`,
    install from that Setup.exe.
-2. Temporarily point `UPDATE_URL` in `electron/updater.cjs` to
-   `C:\\temp\\paxfeed`, bump the version
-   (`npm version patch --no-git-tag-version`), make a visible change,
+2. Create the override file (the app uses it on next launch):
+
+   ```powershell
+   Set-Content "$env:APPDATA\md-reader\update-feed.txt" 'C:\temp\paxfeed'
+   ```
+
+3. Bump the version (`npm version patch --no-git-tag-version`),
    `npm run release:pack` again (same outputDir so the delta chains), copy
    the new artifacts to `C:\temp\paxfeed`.
-3. In the installed app: Settings → Updates → Check → Download (progress
-   bar) → Restart & Update. Verify settings survive and the terminal works.
-4. Revert `UPDATE_URL` and the throwaway version bump.
+4. Relaunch the installed app → after ~10 s the bottom-right "Update
+   available" card appears → Update now → progress bar → restart notice →
+   app relaunches on the new version. Or drive it manually from Settings →
+   Updates. Verify settings survive and the terminal works.
+5. Clean up: delete the override and the throwaway bump:
+
+   ```powershell
+   Remove-Item "$env:APPDATA\md-reader\update-feed.txt"
+   git checkout -- package.json package-lock.json
+   ```
 
 ## Rollback
 

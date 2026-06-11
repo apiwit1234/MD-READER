@@ -113,8 +113,8 @@ ipcMain.handle('fonts:add', async () => {
 ipcMain.handle('fonts:remove', (_e, id) => getFontStore().remove(typeof id === 'string' ? id : ''));
 ipcMain.handle('fonts:data', (_e, id) => getFontStore().data(typeof id === 'string' ? id : ''));
 
-// --- Auto-update (Velopack + GitHub Releases) ---
-const { createUpdater, UPDATE_URL } = require('./updater.cjs');
+// --- Updates (Velopack + GitHub Releases) ---
+const { createUpdater, resolveUpdateUrl } = require('./updater.cjs');
 
 function broadcastToWindows(channel, payload) {
   for (const w of BrowserWindow.getAllWindows()) {
@@ -122,30 +122,37 @@ function broadcastToWindows(channel, payload) {
   }
 }
 
+function updateFeedUrl() {
+  return resolveUpdateUrl({
+    envUrl: process.env.PAX_UPDATE_URL,
+    readOverride: () => {
+      const p = path.join(app.getPath('userData'), 'update-feed.txt');
+      if (!existsSync(p)) return '';
+      return require('node:fs').readFileSync(p, 'utf8').trim();
+    },
+  });
+}
+
 const updater = createUpdater({
   isPackaged: app.isPackaged,
   makeManager: () => {
     const { UpdateManager } = require('velopack');
-    return new UpdateManager(UPDATE_URL);
+    return new UpdateManager(updateFeedUrl());
   },
   onProgress: (percent) => broadcastToWindows('app:update-progress', percent),
   log: (m) => appendLog('autoUpdate', m),
 });
 
-// Auto flow on launch (settings.autoUpdate, default true): check, download in
-// the background, notify the renderer. The delta patch applies on restart
-// (Restart & Update button) or automatically on the next launch.
+// Launch check is NOTIFY-ONLY (settings.autoUpdate, default true): the
+// renderer shows an "Update available" card and nothing downloads or installs
+// without the user's click.
 function initAutoUpdate() {
   if (!app.isPackaged) return;
   if (!getSettingsStore().read().autoUpdate) return;
   setTimeout(async () => {
     try {
       const c = await updater.check();
-      if (!c.ok || !c.version) return;
-      broadcastToWindows('app:update-available', c.version);
-      const d = await updater.download();
-      if (!d.ok) return;
-      broadcastToWindows('app:update-ready', d.version);
+      if (c.ok && c.version) broadcastToWindows('app:update-available', c.version);
     } catch (err) {
       appendLog('autoUpdate', String((err && err.stack) || err));
     }

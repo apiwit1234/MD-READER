@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-const { createUpdater } = require('../../../electron/updater.cjs');
+const { createUpdater, resolveUpdateUrl, DEFAULT_UPDATE_URL } = require('../../../electron/updater.cjs');
 
 type FakeManager = ReturnType<typeof fakeVelopack>;
 
@@ -13,6 +13,24 @@ function fakeVelopack(overrides: Partial<Record<string, unknown>> = {}) {
     ...overrides,
   };
 }
+
+describe('resolveUpdateUrl', () => {
+  it('prefers the env var', () => {
+    expect(resolveUpdateUrl({ envUrl: 'C:\\feed', readOverride: () => 'D:\\other' })).toBe('C:\\feed');
+  });
+
+  it('falls back to the override file contents', () => {
+    expect(resolveUpdateUrl({ envUrl: undefined, readOverride: () => 'C:\\temp\\paxfeed' })).toBe('C:\\temp\\paxfeed');
+  });
+
+  it('defaults to GitHub when neither is set', () => {
+    expect(resolveUpdateUrl({ envUrl: undefined, readOverride: () => '' })).toBe(DEFAULT_UPDATE_URL);
+  });
+
+  it('survives an override read error', () => {
+    expect(resolveUpdateUrl({ envUrl: undefined, readOverride: () => { throw new Error('ENOENT'); } })).toBe(DEFAULT_UPDATE_URL);
+  });
+});
 
 describe('createUpdater', () => {
   it('is a no-op when not packaged', async () => {

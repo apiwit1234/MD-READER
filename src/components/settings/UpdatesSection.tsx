@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { getApi, hasApi, type AppSettings } from '@/lib/electron-api';
+import { requestUpdateRestart } from '@/lib/update-restart';
 
 type Props = {
   settings: AppSettings | null;
@@ -18,14 +19,12 @@ type Phase =
 export function UpdatesSection({ settings, onUpdateSettings }: Props) {
   const [phase, setPhase] = useState<Phase>({ step: 'idle' });
 
-  // Background auto-update flow can finish while this pane is open.
   useEffect(() => {
     if (!hasApi()) return;
     const offProgress = getApi().update.onProgress((percent) =>
       setPhase((p) => (p.step === 'downloading' ? { ...p, percent } : p)),
     );
-    const offReady = getApi().update.onUpdateReady((version) => setPhase({ step: 'ready', version }));
-    return () => { offProgress(); offReady(); };
+    return () => { offProgress(); };
   }, []);
 
   const check = () => {
@@ -50,15 +49,18 @@ export function UpdatesSection({ settings, onUpdateSettings }: Props) {
       <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Updates</div>
       <div className="rounded-theme border border-border p-2.5 text-sm">
         <label className="flex items-center justify-between gap-2">
-          <span>Automatic updates</span>
+          <span>Check for updates at startup</span>
           <input
             type="checkbox"
-            aria-label="Automatic updates"
+            aria-label="Check for updates at startup"
             checked={settings?.autoUpdate ?? true}
             disabled={!hasApi() || !settings}
             onChange={(e) => onUpdateSettings({ autoUpdate: e.target.checked })}
           />
         </label>
+        <p className="mt-1 text-xs text-muted">
+          Nothing installs by itself — you&apos;re asked first, always.
+        </p>
 
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-xs text-muted">
@@ -81,7 +83,7 @@ export function UpdatesSection({ settings, onUpdateSettings }: Props) {
           ) : phase.step === 'ready' ? (
             <button
               type="button"
-              onClick={() => void getApi().update.install()}
+              onClick={() => requestUpdateRestart(phase.version)}
               className="btn-gradient shrink-0 rounded-theme px-2 py-1 text-xs"
             >
               Restart &amp; Update

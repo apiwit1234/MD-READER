@@ -1,6 +1,25 @@
 'use strict';
 
-const UPDATE_URL = 'https://github.com/apiwit1234/MD-READER/releases/latest/download/';
+const DEFAULT_UPDATE_URL = 'https://github.com/apiwit1234/MD-READER/releases/latest/download/';
+
+/**
+ * Resolve the update feed without code changes:
+ * 1. PAX_UPDATE_URL env var (dev shells)
+ * 2. an override file's contents (e.g. %APPDATA%\md-reader\update-feed.txt
+ *    containing C:\temp\paxfeed) — lets an INSTALLED build point at a local
+ *    test feed; delete the file to go back to GitHub Releases
+ * 3. the GitHub Releases default
+ */
+function resolveUpdateUrl({ envUrl, readOverride }) {
+  if (envUrl) return envUrl;
+  try {
+    const t = readOverride();
+    if (t) return t;
+  } catch {
+    // unreadable/missing override file — fall through to the default
+  }
+  return DEFAULT_UPDATE_URL;
+}
 
 /**
  * Velopack-backed updater behind a small testable facade.
@@ -84,4 +103,4 @@ function createUpdater({ isPackaged, makeManager, onProgress, log = () => {} }) 
   return { check, download, applyAndRestart, hasPending: () => downloaded };
 }
 
-module.exports = { createUpdater, UPDATE_URL };
+module.exports = { createUpdater, resolveUpdateUrl, DEFAULT_UPDATE_URL };

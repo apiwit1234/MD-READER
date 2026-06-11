@@ -9,6 +9,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { FolderPickerModal } from '@/components/FolderPickerModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsModal } from '@/components/SettingsModal';
+import { UpdateCenter } from '@/components/UpdateCenter';
+import { Settings } from 'lucide-react';
 import { themeMode } from '@/lib/themes';
 import { loadState, saveState, defaultState, clearedState, saveSearchState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
 import { pickNextColor, rgbTripletToHex } from '@/lib/colors';
@@ -602,17 +604,13 @@ export default function Page() {
 
   // Update lifecycle UI: a persistent header pill while an update awaits a
   // restart, and a one-time confirmation toast on the first launch after one.
-  const [updateReady, setUpdateReady] = useState<string | null>(null);
+  // Post-update confirmation toast. Update offers/downloads/restart notices
+  // live in <UpdateCenter /> (bottom-right card).
   useEffect(() => {
     if (!hasApi()) return;
-    const off = getApi().update.onUpdateReady((version) => {
-      setUpdateReady(version);
-      showToast(`Update v${version} downloaded — restart PAX Reader to apply`, 6000);
-    });
     void getApi().app.versionInfo().then((info) => {
       if (info.updatedFrom) showToast(`PAX Reader updated to v${info.current} ✓`, 6000);
     });
-    return () => { off(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1304,16 +1302,6 @@ export default function Page() {
           <ModeSwitcher mode={mode} onChange={changeMode} />
         </div>
         <div className="flex items-center gap-4">
-          {updateReady && (
-            <button
-              type="button"
-              onClick={() => { void getApi().update.install(); }}
-              title={`Restart now to update to v${updateReady}`}
-              className="flex shrink-0 items-center gap-1 rounded-full border border-accent bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent hover:text-accent-fg"
-            >
-              ⟳ Update ready — restart
-            </button>
-          )}
           {mode !== 'terminal' && ViewToggles}
           <button
             type="button"
@@ -1330,7 +1318,7 @@ export default function Page() {
             aria-label="Open appearance settings"
             className="rounded-theme p-2 text-muted hover:bg-surface-2"
           >
-            ⚙️
+            <Settings className="h-4 w-4" aria-hidden />
           </button>
           {hasApi() && <WindowControls />}
         </div>
@@ -1349,6 +1337,8 @@ export default function Page() {
         onCustomFontsChanged={setCustomFonts}
         onResetDefaults={resetDefaults}
       />
+
+      <UpdateCenter />
 
       {bridgeMissing && (
         <div className="bg-amber-100 px-4 py-1 text-xs text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">

@@ -36,6 +36,7 @@ function stubApi(overrides: { check?: unknown; download?: unknown } = {}) {
 
 beforeEach(() => {
   vi.mocked(hasApi).mockReturnValue(true);
+  vi.useRealTimers();
 });
 
 describe('UpdatesSection', () => {
@@ -49,7 +50,11 @@ describe('UpdatesSection', () => {
     fireEvent.click(screen.getByRole('button', { name: /download/i }));
     const restart = await screen.findByRole('button', { name: /restart & update/i });
 
+    vi.useFakeTimers();
     fireEvent.click(restart);
+    // requestUpdateRestart shows the restart notice first, then installs.
+    expect(api.update.install).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(2000);
     expect(api.update.install).toHaveBeenCalled();
   });
 
@@ -70,7 +75,7 @@ describe('UpdatesSection', () => {
   it('disables controls without the electron bridge', () => {
     vi.mocked(hasApi).mockReturnValue(false);
     render(<UpdatesSection settings={DEFAULTS} onUpdateSettings={vi.fn()} />);
-    expect(screen.getByRole('checkbox', { name: /automatic updates/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /check for updates/i })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /check for updates at startup/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^check for updates$/i })).toBeDisabled();
   });
 });
