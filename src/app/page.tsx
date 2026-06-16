@@ -1,6 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { PanelGroup, Panel, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
 import { Sidebar } from '@/components/Sidebar';
 import { TabBar, type TabView } from '@/components/TabBar';
@@ -237,7 +237,10 @@ export default function Page() {
 
   const [bottomPanel, setBottomPanel] = useState<BottomPanelState>({ open: false, activeTab: 'terminal' });
   const [mode, setMode] = useState<Mode>('md');
-  const [modeSwitching, setModeSwitching] = useState(false);
+  // isModeSwitching (from useTransition) is true while the new mode's pane
+  // renders and false once it commits — React owns it, so it can never get
+  // stuck or drop a click the way a manual flag + rAF timer could.
+  const [isModeSwitching, startModeTransition] = useTransition();
   const [htmlPreview, setHtmlPreview] = useState(false);
   const modeRef = useRef(mode);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
@@ -524,24 +527,13 @@ export default function Page() {
     modeRef.current = mode;
   }, [mode, hydrated]);
 
-  // Switch mode behind the spinner overlay: the overlay paints first (sync
-  // state), the heavy pane render runs in an interruptible transition, and
-  // the overlay clears only AFTER the new mode has committed. (The previous
-  // double-rAF cleared it on a timer guess — usually before the work was
-  // done, so the spinner never showed and the UI just froze.)
-  const pendingModeRef = useRef<Mode | null>(null);
+  // Switch mode inside a transition: the spinner overlay shows while the new
+  // pane (CodeEditor mount / markdown parse) renders, and clears automatically
+  // when it commits — no manual flag, no timer guess.
   function changeMode(next: Mode) {
-    if (modeRef.current === next || pendingModeRef.current === next) return;
-    pendingModeRef.current = next;
-    setModeSwitching(true);
-    startTransition(() => setMode(next));
+    if (mode === next) return;
+    startModeTransition(() => setMode(next));
   }
-  useEffect(() => {
-    if (pendingModeRef.current !== mode) return;
-    pendingModeRef.current = null;
-    const raf = requestAnimationFrame(() => setModeSwitching(false));
-    return () => cancelAnimationFrame(raf);
-  }, [mode]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -1405,7 +1397,7 @@ export default function Page() {
             <PanelGroup direction="vertical" autoSaveId={`mdreader.layout.v.v3.${getWindowContext().windowId}`}>
               <Panel ref={topContentPanelRef} defaultSize={65} minSize={25} collapsible collapsedSize={0} className="overflow-hidden">
                 <main className="relative flex h-full min-w-0 flex-col bg-bg" data-zoom-zone>
-                  {modeSwitching && (
+                  {isModeSwitching && (
                     <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-bg/60 backdrop-blur-[1px]">
                       <svg className="h-6 w-6 animate-spin text-accent" viewBox="0 0 24 24" fill="none" aria-hidden>
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4" />

@@ -179,7 +179,9 @@ export function TabBar({
               onMouseDown={onTearOff ? (e) => startTearDrag(e, t) : undefined}
               title={t.relativePath}
               className={[
-                'relative flex min-w-0 cursor-pointer select-none items-center gap-2 border-r border-border px-3 py-2 text-sm',
+                // min-w floor keeps the close button reachable when many tabs
+                // shrink; overflow beyond that is reached via the ▾ dropdown.
+                'relative flex min-w-[5rem] cursor-pointer select-none items-center gap-2 border-r border-border px-3 py-2 text-sm',
                 t.pinned ? 'flex-[0_1_160px]' : 'flex-[0_1_220px]',
                 t.active ? 'bg-bg text-fg' : 'text-muted hover:bg-surface-2',
               ].join(' ')}
@@ -200,7 +202,7 @@ export function TabBar({
               {t.updating && (
                 <span aria-label="updating" title="updating from disk" className="inline-block animate-spin text-accent"><RefreshCw className="h-3 w-3" /></span>
               )}
-              <span className="truncate">{t.filename}</span>
+              <span className="min-w-0 flex-1 truncate">{t.filename}</span>
               {!t.pinned && (
                 <button
                   type="button"

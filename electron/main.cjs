@@ -224,11 +224,24 @@ ipcMain.handle('migrate:run', async () => {
     await downloadFollowingRedirects(plan.setupUrl, setupPath);
     const code = await new Promise((resolve) => {
       const child = spawn(setupPath, plan.setupArgs, { detached: false, stdio: 'ignore' });
-      child.on('exit', resolve);
-      child.on('error', () => resolve(-1));
+      // Don't hang the UI forever if Setup stalls (e.g. an unattended prompt).
+      const timer = setTimeout(() => { try { child.kill(); } catch {} resolve('timeout'); }, 180_000);
+      child.on('exit', (c) => { clearTimeout(timer); resolve(c); });
+      child.on('error', () => { clearTimeout(timer); resolve(-1); });
     });
-    if (code !== 0) return { ok: false, error: `setup exited with ${code}` };
-    // New install verified; remove the old one detached (it survives our exit).
+    if (code !== 0) return { ok: false, error: `setup did not complete (${code})` };
+
+    // Verify the Velopack install actually landed BEFORE removing the old one
+    // — this is the irreversible step, so never uninstall on faith. Velopack
+    // installs to %LOCALAPPDATA%\PAXReader with Update.exe at the root.
+    const localApp = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+    const veloRoot = path.join(localApp, 'PAXReader', 'Update.exe');
+    if (!existsSync(veloRoot)) {
+      appendLog('migrate', `new install not found at ${veloRoot}; keeping old install`);
+      return { ok: false, error: 'new install not detected — your current app was left intact' };
+    }
+
+    // Verified; remove the old NSIS copy detached (it survives our exit) and quit.
     spawn(plan.uninstallExe, plan.uninstallArgs, { detached: true, stdio: 'ignore' }).unref();
     setTimeout(() => app.quit(), 500);
     return { ok: true };

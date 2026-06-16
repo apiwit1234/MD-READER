@@ -25,7 +25,6 @@ function stubApi(overrides: { check?: unknown; download?: unknown } = {}) {
       check: vi.fn().mockResolvedValue(overrides.check ?? { ok: true, version: '2.1.0' }),
       download: vi.fn().mockResolvedValue(overrides.download ?? { ok: true, version: '2.1.0' }),
       install: vi.fn().mockResolvedValue(true),
-      onUpdateReady: vi.fn().mockReturnValue(() => {}),
       onUpdateAvailable: vi.fn().mockReturnValue(() => {}),
       onProgress: vi.fn().mockReturnValue(() => {}),
     },

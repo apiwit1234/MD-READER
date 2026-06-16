@@ -116,7 +116,6 @@ type MdReader = {
     check: () => Promise<{ ok: boolean; version?: string | null; notes?: string; error?: string }>;
     download: () => Promise<{ ok: boolean; version?: string; error?: string }>;
     install: () => Promise<boolean>;
-    onUpdateReady: (cb: (version: string) => void) => () => void;
     onUpdateAvailable: (cb: (version: string) => void) => () => void;
     onProgress: (cb: (percent: number) => void) => () => void;
   };
