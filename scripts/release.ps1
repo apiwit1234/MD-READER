@@ -80,7 +80,9 @@ $assets = @(
   'release/PAX-Reader-{0}-x64-portable.exe' -f $version,
   'release/velopack/PAXReader-win-Setup.exe',     # Velopack installer (new users)
   'release/velopack/PAXReader-{0}-full.nupkg' -f $version,
-  'release/velopack/RELEASES'                     # Velopack feed manifest
+  'release/velopack/releases.win.json',           # Velopack 1.x feed (what UpdateManager actually reads)
+  'release/velopack/assets.win.json',             # Velopack asset metadata
+  'release/velopack/RELEASES'                      # legacy feed manifest (back-compat)
 )
 $failed = @()
 foreach ($a in $assets) {
@@ -104,13 +106,22 @@ foreach ($a in $assets) {
 }
 if ($failed.Count) { throw "Upload failed for: $($failed -join ', '). Re-run the script — it skips assets already uploaded." }
 
-# --- verify both update channels resolve to this version ---
+# --- verify: every expected asset is present + both feeds name this version ---
+# Read assets from the API and fetch feed files via their direct
+# browser_download_url (NOT the /latest/download/ path, which can briefly
+# negative-cache right after upload).
+$rel2 = (Invoke-WebRequest "https://api.github.com/repos/$repo/releases/tags/$tag" -Headers $h -UseBasicParsing).Content | ConvertFrom-Json
+$have = @($rel2.assets | ForEach-Object { $_.name })
+$expected = $assets | ForEach-Object { Split-Path $_ -Leaf }
+$missing = $expected | Where-Object { $have -notcontains $_ }
+if ($missing) { throw "release is missing assets: $($missing -join ', ')" }
 $latest = (Invoke-WebRequest "https://api.github.com/repos/$repo/releases/latest" -Headers $h -UseBasicParsing).Content | ConvertFrom-Json
 if ($latest.tag_name -ne $tag) { throw "/releases/latest is $($latest.tag_name), expected $tag" }
-$yml = (Invoke-WebRequest "https://github.com/$repo/releases/latest/download/latest.yml" -UseBasicParsing).Content
-$rels = (Invoke-WebRequest "https://github.com/$repo/releases/latest/download/RELEASES" -UseBasicParsing).Content
+function Get-AssetText($n) { (Invoke-WebRequest (($rel2.assets | Where-Object { $_.name -eq $n }).browser_download_url) -UseBasicParsing).Content }
+$yml = Get-AssetText 'latest.yml'
+$winjson = Get-AssetText 'releases.win.json'   # the feed Velopack UpdateManager reads
 if ($yml -notmatch [Regex]::Escape("version: $version")) { throw 'latest.yml did not resolve to this version' }
-if ($rels -notmatch [Regex]::Escape("PAXReader-$version-full.nupkg")) { throw 'RELEASES did not list this version' }
+if ($winjson -notmatch [Regex]::Escape("PAXReader-$version-full.nupkg")) { throw 'releases.win.json (Velopack feed) did not list this version' }
 
 Write-Host "`nDONE — $tag published with all assets; both update channels verified." -ForegroundColor Green
 Write-Host "https://github.com/$repo/releases/tag/$tag"
