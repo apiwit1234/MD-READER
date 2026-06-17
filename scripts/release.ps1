@@ -52,7 +52,7 @@ $h = @{ Authorization = "token $tok"; 'User-Agent' = 'pax-release'; Accept = 'ap
 # --- build both channels into a clean release/ ---
 # Clean so the Velopack delta baseline is honest (first release = full only).
 if (Test-Path release) { Remove-Item release -Recurse -Force }
-Write-Host 'Building NSIS + portable + zip (+ latest.yml)...' -ForegroundColor Cyan
+Write-Host 'Building portable + unpacked app...' -ForegroundColor Cyan
 npm run dist
 if ($LASTEXITCODE -ne 0) { throw 'npm run dist failed' }
 Write-Host 'Packing Velopack...' -ForegroundColor Cyan
@@ -75,11 +75,7 @@ Write-Host "Release id $($rel.id), $($existing.Count) existing asset(s)" -Foregr
 # Use string interpolation, NOT inline -f: in an array literal `,` and `-f`
 # mis-associate and merge elements.
 $assets = @(
-  'release/latest.yml',                                  # electron-updater manifest (old 1.0.x installs)
-  "release/PAX-Reader-$version-x64.exe",                 # NSIS installer (old installs cross over)
-  "release/PAX-Reader-$version-x64.exe.blockmap",
-  "release/PAX-Reader-$version-x64.zip",
-  "release/PAX-Reader-$version-x64-portable.exe",
+  "release/PAX-Reader-$version-x64-portable.exe",        # no-install option
   'release/velopack/PAXReader-win-Setup.exe',            # Velopack installer (new users)
   "release/velopack/PAXReader-$version-full.nupkg",
   'release/velopack/releases.win.json',                  # Velopack 1.x feed (what UpdateManager actually reads)
@@ -120,9 +116,7 @@ if ($missing) { throw "release is missing assets: $($missing -join ', ')" }
 $latest = (Invoke-WebRequest "https://api.github.com/repos/$repo/releases/latest" -Headers $h -UseBasicParsing).Content | ConvertFrom-Json
 if ($latest.tag_name -ne $tag) { throw "/releases/latest is $($latest.tag_name), expected $tag" }
 function Get-AssetText($n) { (Invoke-WebRequest (($rel2.assets | Where-Object { $_.name -eq $n }).browser_download_url) -UseBasicParsing).Content }
-$yml = Get-AssetText 'latest.yml'
 $winjson = Get-AssetText 'releases.win.json'   # the feed Velopack UpdateManager reads
-if ($yml -notmatch [Regex]::Escape("version: $version")) { throw 'latest.yml did not resolve to this version' }
 if ($winjson -notmatch [Regex]::Escape("PAXReader-$version-full.nupkg")) { throw 'releases.win.json (Velopack feed) did not list this version' }
 
 Write-Host "`nDONE -- $tag published with all assets; both update channels verified." -ForegroundColor Green

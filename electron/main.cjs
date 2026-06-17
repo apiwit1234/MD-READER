@@ -14,7 +14,7 @@ const path = require('node:path');
 const os = require('node:os');
 const fs = require('node:fs').promises;
 const http = require('node:http');
-const { createReadStream, createWriteStream, existsSync, statSync, appendFileSync, watch: fsWatch } = require('node:fs');
+const { createReadStream, existsSync, statSync, appendFileSync, watch: fsWatch } = require('node:fs');
 const { scanFiles } = require('./search-core.cjs');
 const git = require('./git.cjs');
 const { createSettingsStore } = require('./settings.cjs');
@@ -181,75 +181,6 @@ ipcMain.handle('app:versionInfo', () => {
 });
 
 ipcMain.handle('update:check', () => updater.check());
-
-// --- One-time NSIS → Velopack migration (UI-only for the user) ---
-const { detectInstallKind, buildMigrationPlan } = require('./migrate-nsis.cjs');
-
-ipcMain.handle('migrate:detect', () => {
-  if (!app.isPackaged) return 'none';
-  return detectInstallKind(process.execPath, existsSync);
-});
-
-function downloadFollowingRedirects(url, dest, depth = 0) {
-  return new Promise((resolve, reject) => {
-    if (depth > 5) return reject(new Error('too many redirects'));
-    require('node:https').get(url, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        res.resume();
-        resolve(downloadFollowingRedirects(res.headers.location, dest, depth + 1));
-        return;
-      }
-      if (res.statusCode !== 200) {
-        res.resume();
-        reject(new Error(`HTTP ${res.statusCode}`));
-        return;
-      }
-      const out = createWriteStream(dest);
-      res.pipe(out);
-      out.on('finish', () => out.close(() => resolve(undefined)));
-      out.on('error', reject);
-    }).on('error', reject);
-  });
-}
-
-// Download the Velopack Setup to temp, run it silently, then remove the NSIS
-// copy and exit. Order matters: never uninstall before the new Setup exits 0.
-ipcMain.handle('migrate:run', async () => {
-  const { spawn } = require('node:child_process');
-  const kind = detectInstallKind(process.execPath, existsSync);
-  if (kind !== 'nsis') return { ok: false, error: 'not an NSIS install' };
-  const plan = buildMigrationPlan(path.dirname(process.execPath));
-  const setupPath = path.join(app.getPath('temp'), 'PAXReader-win-Setup.exe');
-  try {
-    await downloadFollowingRedirects(plan.setupUrl, setupPath);
-    const code = await new Promise((resolve) => {
-      const child = spawn(setupPath, plan.setupArgs, { detached: false, stdio: 'ignore' });
-      // Don't hang the UI forever if Setup stalls (e.g. an unattended prompt).
-      const timer = setTimeout(() => { try { child.kill(); } catch {} resolve('timeout'); }, 180_000);
-      child.on('exit', (c) => { clearTimeout(timer); resolve(c); });
-      child.on('error', () => { clearTimeout(timer); resolve(-1); });
-    });
-    if (code !== 0) return { ok: false, error: `setup did not complete (${code})` };
-
-    // Verify the Velopack install actually landed BEFORE removing the old one
-    // — this is the irreversible step, so never uninstall on faith. Velopack
-    // installs to %LOCALAPPDATA%\PAXReader with Update.exe at the root.
-    const localApp = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-    const veloRoot = path.join(localApp, 'PAXReader', 'Update.exe');
-    if (!existsSync(veloRoot)) {
-      appendLog('migrate', `new install not found at ${veloRoot}; keeping old install`);
-      return { ok: false, error: 'new install not detected — your current app was left intact' };
-    }
-
-    // Verified; remove the old NSIS copy detached (it survives our exit) and quit.
-    spawn(plan.uninstallExe, plan.uninstallArgs, { detached: true, stdio: 'ignore' }).unref();
-    setTimeout(() => app.quit(), 500);
-    return { ok: true };
-  } catch (err) {
-    appendLog('migrate', String((err && err.stack) || err));
-    return { ok: false, error: String((err && err.message) || err) };
-  }
-});
 
 const devUrl = process.env.ELECTRON_DEV_URL;
 

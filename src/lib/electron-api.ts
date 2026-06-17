@@ -119,10 +119,6 @@ type MdReader = {
     onUpdateAvailable: (cb: (version: string) => void) => () => void;
     onProgress: (cb: (percent: number) => void) => () => void;
   };
-  migrate: {
-    detect: () => Promise<'velopack' | 'nsis' | 'none'>;
-    run: () => Promise<{ ok: boolean; error?: string }>;
-  };
   fileUtil: {
     pathForFile: (file: File) => string | null;
   };

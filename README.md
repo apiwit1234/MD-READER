@@ -31,8 +31,7 @@ A release lists several files. Most people only need the first one:
 |------|-------------------|
 | **`PAXReader-win-Setup.exe`** | **You're a new user. This is the installer** — it sets up auto-updates. |
 | `PAX-Reader-<ver>-x64-portable.exe` | You want a single-file copy that runs without installing (no auto-update). |
-| `PAX-Reader-<ver>-x64.exe` | **Don't** — this is the legacy installer kept only so people on the old v1.0.x can migrate. New users should ignore it. |
-| `latest.yml`, `*.blockmap`, `*.zip`, `*-full.nupkg`, `releases.win.json`, `assets.win.json`, `RELEASES` | Never — these are update-feed files the app downloads automatically. |
+| `*-full.nupkg`, `releases.win.json`, `assets.win.json`, `RELEASES` | Never — these are update-feed files the app downloads automatically. |
 
 ### Updates
 
@@ -44,9 +43,9 @@ bar, then restarts the app to apply it. You can also check manually any time in
 **Settings → Updates**, and turn the startup check off there. Updating never
 touches your settings (they live in `%APPDATA%`).
 
-Upgrading from an old NSIS install (≤ v1.0.x)? It auto-updates once via the old
-mechanism, then shows a one-click **"Upgrade now"** banner that switches you to
-the new patch-based updater.
+On a pre-1.1.x build? Those used a different installer and can't update across
+automatically — download `PAXReader-win-Setup.exe` once and run it; your
+settings carry over (they live in `%APPDATA%`).
 
 ## Develop
 
@@ -75,12 +74,13 @@ npm run test:watch
 ```sh
 npm run dist:dir        # unpacked dir (fast, for local checks)
 npm run dist:portable   # single portable .exe
-npm run dist            # NSIS installer (+ portable + zip) under release/
+npm run dist            # portable .exe under release/
 ```
 
-To cut a release, bump the version and run the publish script — it builds both
-update channels and publishes one GitHub release with all assets, verifying
-each. Full steps and the token setup are in **[docs/RELEASING.md](docs/RELEASING.md)**:
+To cut a release, bump the version and run the publish script — it builds the
+Velopack package and publishes one GitHub release (Setup.exe, portable, and the
+update feed), verifying each asset. Full steps and the token setup are in
+**[docs/RELEASING.md](docs/RELEASING.md)**:
 
 ```sh
 npm version minor       # or patch — commits + tags
@@ -88,23 +88,9 @@ git push --follow-tags
 npm run release:publish # scripts/release.ps1 — no token to type
 ```
 
-### Maintainer cleanup — drop the legacy NSIS channel (planned for a future release)
-
-`PAX-Reader-<ver>-x64.exe`, its `.blockmap`, the `.zip`, and `latest.yml` exist
-only to let pre-v1.1.0 (NSIS / electron-updater) installs migrate to Velopack.
-Once you're confident no v1.0.x installs remain in the wild, do this in one
-release to slim every release to just the Velopack + portable assets:
-
-- [ ] remove the `nsis` and `zip` targets and the `publish` block from
-      `package.json` → `build.win`
-- [ ] drop the NSIS assets (`latest.yml`, `PAX-Reader-*-x64.exe`, `*.blockmap`,
-      `*.zip`) from the `$assets` list **and** the `latest.yml` check in
-      `scripts/release.ps1`
-- [ ] delete the NSIS→Velopack migration code: `electron/migrate-nsis.cjs`,
-      the `migrate:detect`/`migrate:run` IPC in `electron/main.cjs`, the
-      `migrate` bridge in `electron/preload.cjs`/`src/lib/electron-api.ts`, and
-      the "Upgrade now" banner in `src/app/page.tsx`
-- [ ] remove `electron/installer.nsh`
+> The NSIS / electron-updater migration channel was removed after v1.1.1; that
+> release remains the bridge for any pre-1.1.0 install that still needs to cross
+> over manually.
 
 ## Workflow & versioning
 

@@ -78,11 +78,6 @@
   },
   "build": {
     "appId": "io.local.mdreader",
-    "publish": {
-      "provider": "github",
-      "owner": "apiwit1234",
-      "repo": "MD-READER"
-    },
     "productName": "PAX Reader",
     "directories": {
       "output": "release"
@@ -108,19 +103,7 @@
       "icon": "build/icon.png",
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
           "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "zip",
           "arch": [
             "x64"
           ]
@@ -145,13 +128,6 @@
         "role": "Viewer"
       }
     ],
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": false,
-      "include": "electron/installer.nsh"
-    },
     "asar": true
   }
 }

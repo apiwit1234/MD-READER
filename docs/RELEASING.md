@@ -30,33 +30,36 @@ restart — no installer re-run. End users never need any tools installed.
    git push --follow-tags
    ```
 
-2. Build both update channels and publish, in one command:
+2. Build and publish, in one command:
 
    ```powershell
    npm run release:publish
    ```
 
    This runs `scripts/release.ps1`, which:
-   - cleans `release/`, runs `npm run dist` (NSIS + portable + zip +
-     `latest.yml`), then `vpk pack` (Velopack `Setup.exe` + full `.nupkg` +
-     `RELEASES`);
+   - cleans `release/`, runs `npm run dist` (portable + unpacked app), then
+     `vpk pack` (Velopack `Setup.exe` + full `.nupkg` + feed files);
    - creates **one published** GitHub release for the current tag and uploads
      **every** asset itself via the GitHub API — retrying transient TLS resets
      and verifying each asset's byte size;
-   - verifies `/releases/latest` resolves to this version and that both
-     `latest.yml` (electron-updater) and `RELEASES` (Velopack) reference it.
+   - verifies `/releases/latest` resolves to this version and that
+     `releases.win.json` (the feed Velopack reads) lists it.
 
-   > Why a script and not `electron-builder --publish` + `vpk upload`? Using
-   > both tools' publishers against one tag races on draft-vs-published state.
-   > A single API publisher is deterministic. This is how `v1.1.0` shipped.
+   > Why a script and not `vpk upload`? It gives one deterministic API
+   > publisher (no draft-vs-published ambiguity) and lets us verify every
+   > asset. This is how releases since `v1.1.0` shipped.
+   >
+   > The feed URL the app reads must be the **bare repo URL**
+   > (`https://github.com/apiwit1234/MD-READER`) — Velopack's JS UpdateManager
+   > treats it as a GitHub source. A `/releases/latest/download/` URL 404s.
 
    On a network drop mid-upload, just re-run `npm run release:publish` — it
    skips assets already on the release and retries the rest. The script does a
    full rebuild each run; that's intentional and safe.
 
-3. The script fails loudly if anything is missing. A good release has 8 assets:
-   `latest.yml`, `PAX-Reader-<version>-x64.exe` (+ `.blockmap`, `.zip`,
-   `-portable.exe`), `PAXReader-win-Setup.exe`, `PAXReader-<version>-full.nupkg`,
+3. The script fails loudly if anything is missing. A release has 6 assets:
+   `PAX-Reader-<version>-x64-portable.exe`, `PAXReader-win-Setup.exe`,
+   `PAXReader-<version>-full.nupkg`, `releases.win.json`, `assets.win.json`,
    `RELEASES`. Delta `.nupkg`s appear automatically once a prior full package
    exists in the release feed.
 
@@ -114,12 +117,9 @@ a NEW higher version.
 
 - Builds are unsigned: Windows SmartScreen may warn on the FIRST manual
   install. Delta updates applied by an installed app do not show that warning.
-- Migration from the old NSIS installs (≤ v1.0.x) shipped in **v1.1.0**: that
-  release carries BOTH the NSIS artifacts (`latest.yml` + installer) and the
-  Velopack artifacts. Old installs auto-update to it via electron-updater,
-  then show a one-click "Upgrade" prompt that installs the Velopack copy and
-  removes the NSIS one. `scripts/release.ps1` always builds and uploads both
-  sets, so every release keeps the NSIS channel alive for any installs still
-  on the electron-updater path. Once you're confident no NSIS-era installs
-  remain, the `nsis`/`zip` targets and the `publish` block in package.json can
-  be dropped and the NSIS assets removed from `scripts/release.ps1`.
+- NSIS → Velopack migration: shipped in **v1.1.0 / v1.1.1** (those releases
+  carried the NSIS `latest.yml` + installer plus an in-app "Upgrade now"
+  banner). The migration channel and its code were **removed after v1.1.1**.
+  Pre-1.1.0 installs that never crossed over can't auto-update anymore — they
+  must reinstall once from `PAXReader-win-Setup.exe` (settings in `%APPDATA%`
+  survive). v1.1.1 remains available as the last bridge build.
