@@ -1,6 +1,9 @@
 'use strict';
 
-const DEFAULT_UPDATE_URL = 'https://github.com/apiwit1234/MD-READER/releases/latest/download/';
+// Velopack's JS UpdateManager treats a github.com URL as a GitHub source and
+// reads releases via the API — so this MUST be the bare repo URL, NOT a
+// /releases/latest/download/ path (that 404s).
+const DEFAULT_UPDATE_URL = 'https://github.com/apiwit1234/MD-READER';
 
 /**
  * Resolve the update feed without code changes:
