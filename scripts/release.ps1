@@ -116,8 +116,14 @@ if ($missing) { throw "release is missing assets: $($missing -join ', ')" }
 $latest = (Invoke-WebRequest "https://api.github.com/repos/$repo/releases/latest" -Headers $h -UseBasicParsing).Content | ConvertFrom-Json
 if ($latest.tag_name -ne $tag) { throw "/releases/latest is $($latest.tag_name), expected $tag" }
 function Get-AssetText($n) { (Invoke-WebRequest (($rel2.assets | Where-Object { $_.name -eq $n }).browser_download_url) -UseBasicParsing).Content }
-$winjson = Get-AssetText 'releases.win.json'   # the feed Velopack UpdateManager reads
-if ($winjson -notmatch [Regex]::Escape("PAXReader-$version-full.nupkg")) { throw 'releases.win.json (Velopack feed) did not list this version' }
+# Retry: a just-uploaded asset can take a few seconds to be served by the CDN.
+$needle = "PAXReader-$version-full.nupkg"
+$feedOk = $false
+for ($i = 1; $i -le 6 -and -not $feedOk; $i++) {
+  try { if ((Get-AssetText 'releases.win.json') -match [Regex]::Escape($needle)) { $feedOk = $true; break } } catch {}
+  Start-Sleep -Seconds 4
+}
+if (-not $feedOk) { throw 'releases.win.json (Velopack feed) did not list this version (after retries)' }
 
 Write-Host "`nDONE -- $tag published with all assets; both update channels verified." -ForegroundColor Green
 Write-Host "https://github.com/$repo/releases/tag/$tag"
