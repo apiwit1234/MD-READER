@@ -72,17 +72,19 @@ $existing = @($rel.assets | ForEach-Object { $_.name })
 Write-Host "Release id $($rel.id), $($existing.Count) existing asset(s)" -ForegroundColor Cyan
 
 # --- upload every channel asset, retrying transient TLS resets, verifying size ---
+# Use string interpolation, NOT inline -f: in an array literal `,` and `-f`
+# mis-associate and merge elements.
 $assets = @(
-  'release/latest.yml',                          # electron-updater manifest (old 1.0.x installs)
-  'release/PAX-Reader-{0}-x64.exe' -f $version,   # NSIS installer (old installs cross over)
-  'release/PAX-Reader-{0}-x64.exe.blockmap' -f $version,
-  'release/PAX-Reader-{0}-x64.zip' -f $version,
-  'release/PAX-Reader-{0}-x64-portable.exe' -f $version,
-  'release/velopack/PAXReader-win-Setup.exe',     # Velopack installer (new users)
-  'release/velopack/PAXReader-{0}-full.nupkg' -f $version,
-  'release/velopack/releases.win.json',           # Velopack 1.x feed (what UpdateManager actually reads)
-  'release/velopack/assets.win.json',             # Velopack asset metadata
-  'release/velopack/RELEASES'                      # legacy feed manifest (back-compat)
+  'release/latest.yml',                                  # electron-updater manifest (old 1.0.x installs)
+  "release/PAX-Reader-$version-x64.exe",                 # NSIS installer (old installs cross over)
+  "release/PAX-Reader-$version-x64.exe.blockmap",
+  "release/PAX-Reader-$version-x64.zip",
+  "release/PAX-Reader-$version-x64-portable.exe",
+  'release/velopack/PAXReader-win-Setup.exe',            # Velopack installer (new users)
+  "release/velopack/PAXReader-$version-full.nupkg",
+  'release/velopack/releases.win.json',                  # Velopack 1.x feed (what UpdateManager actually reads)
+  'release/velopack/assets.win.json',                    # Velopack asset metadata
+  'release/velopack/RELEASES'                            # legacy feed manifest (back-compat)
 )
 $failed = @()
 foreach ($a in $assets) {
