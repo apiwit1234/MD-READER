@@ -1,5 +1,5 @@
 'use client';
-import { BookOpen, Ghost, Moon, Snowflake, Sparkles, Sun, type LucideIcon } from 'lucide-react';
+import { BookOpen, Ghost, Moon, Snowflake, Sparkles, Sun, TreePine, type LucideIcon } from 'lucide-react';
 
 // Maps ThemeMeta.icon names to lucide components.
 const MAP: Record<string, LucideIcon> = {
@@ -9,6 +9,7 @@ const MAP: Record<string, LucideIcon> = {
   snowflake: Snowflake,
   'book-open': BookOpen,
   ghost: Ghost,
+  'tree-pine': TreePine,
 };
 
 export function ThemeIcon({ name, className }: { name: string; className?: string }) {

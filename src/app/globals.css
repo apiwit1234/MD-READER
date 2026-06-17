@@ -153,6 +153,29 @@ html.ui-large { font-size: 18px; }
   --glass: none;
 }
 
+[data-theme="christmas"] {
+  --c-bg: 11 31 22;            /* #0B1F16 deep pine night */
+  --c-surface: 16 39 27;       /* #10271B */
+  --c-surface-2: 23 52 31;     /* #17341F */
+  --c-fg: 254 239 208;         /* #FEEFD0 cream snow */
+  --c-muted: 156 180 161;      /* #9CB4A1 */
+  --c-border: 36 74 48;        /* #244A30 */
+  --c-accent: 224 58 62;       /* #E03A3E festive red */
+  --c-accent-2: 31 168 90;     /* #1FA85A holly green */
+  --c-accent-fg: 255 255 255;
+  --c-accent-soft: 58 22 32;   /* #3A1620 */
+  --c-danger: 251 113 133;
+  --c-warn: 248 178 41;        /* #F8B229 gold */
+  --c-ok: 74 222 128;
+  --radius: 12px;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 4px 12px rgb(0 0 0 / 0.45);
+  --shadow-3: 0 12px 32px rgb(0 0 0 / 0.6);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --glass: none;
+}
+
 body {
   @apply bg-bg text-fg;
 }
@@ -189,6 +212,46 @@ body {
 /* Entry animations for overlays. */
 @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 @keyframes popIn { from { opacity: 0; transform: scale(0.97) translateY(4px) } to { opacity: 1; transform: none } }
+
+/* ---- Festive overlay (Christmas theme): snow + Santa sleigh fly-by. ---- */
+.festive-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+.festive-flake {
+  position: absolute;
+  top: -16px;
+  color: #fff;
+  opacity: 0.85;
+  animation-name: festive-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+@keyframes festive-fall {
+  0%   { transform: translateY(-16px) translateX(0) rotate(0deg); }
+  100% { transform: translateY(105vh) translateX(var(--drift, 20px)) rotate(360deg); }
+}
+.festive-santa {
+  position: absolute;
+  top: 9%;
+  left: 0;
+  width: 190px;
+  filter: drop-shadow(0 0 6px rgb(248 178 41 / 0.55));
+  animation: festive-ride 9s linear forwards;
+  will-change: transform;
+}
+@keyframes festive-ride {
+  0%   { transform: translateX(-220px) translateY(0); }
+  50%  { transform: translateX(50vw) translateY(-14px); }
+  100% { transform: translateX(calc(100vw + 220px)) translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .festive-overlay { display: none; }
+}
 
 /* Default reading font: Latin → Inter, Thai → Noto Sans Thai. A font picked
    in Settings → Fonts overrides this via the article's inline style. */

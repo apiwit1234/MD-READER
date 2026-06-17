@@ -1,4 +1,4 @@
-export type Theme = 'light' | 'dark' | 'aurora' | 'nord' | 'sepia' | 'dracula';
+export type Theme = 'light' | 'dark' | 'aurora' | 'nord' | 'sepia' | 'dracula' | 'christmas';
 
 export type ThemeMeta = {
   id: Theme;
@@ -81,6 +81,21 @@ export const THEMES: ThemeMeta[] = [
     hljs: 'dark',
     titleBar: { bg: '#282A36', fg: '#F8F8F2' },
     terminal: { background: '#282A36', foreground: '#F8F8F2', cursor: '#BD93F9', selectionBackground: '#44475A' },
+  },
+  {
+    id: 'christmas', label: 'Christmas', icon: 'tree-pine', mode: 'dark',
+    swatch: ['#0B1F16', '#10271B', '#FEEFD0', '#E03A3E'],
+    mermaid: {
+      theme: 'base',
+      themeVariables: {
+        darkMode: 'true', background: '#0B1F16', primaryColor: '#17341F',
+        primaryTextColor: '#FEEFD0', primaryBorderColor: '#E03A3E',
+        lineColor: '#1FA85A', secondaryColor: '#10271B', tertiaryColor: '#244A30',
+      },
+    },
+    hljs: 'dark',
+    titleBar: { bg: '#0B1F16', fg: '#FEEFD0' },
+    terminal: { background: '#0B1F16', foreground: '#FEEFD0', cursor: '#E03A3E', selectionBackground: '#244A30' },
   },
 ];
 

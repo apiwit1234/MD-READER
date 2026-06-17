@@ -40,7 +40,7 @@ describe('SettingsModal', () => {
     for (const c of ['Appearance', 'Fonts', 'Behavior', 'Updates', 'Advanced']) {
       expect(screen.getByRole('button', { name: c })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole('button', { name: /^Select .* theme$/ })).toHaveLength(6);
+    expect(screen.getAllByRole('button', { name: /^Select .* theme$/ })).toHaveLength(7);
   });
 
   it('marks the active theme card as pressed', () => {

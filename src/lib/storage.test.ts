@@ -45,8 +45,8 @@ describe('storage', () => {
     expect(loadState()).toEqual(defaultState());
   });
 
-  it('accepts all six themes', () => {
-    for (const theme of ['light', 'dark', 'aurora', 'nord', 'sepia', 'dracula'] as const) {
+  it('accepts all seven themes', () => {
+    for (const theme of ['light', 'dark', 'aurora', 'nord', 'sepia', 'dracula', 'christmas'] as const) {
       const s = defaultState();
       s.theme = theme;
       saveState(s);

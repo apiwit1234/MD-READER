@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { THEMES, THEME_IDS, isTheme, themeMode, themeMeta, migrateTheme } from './themes';
 
 describe('themes registry', () => {
-  it('defines exactly the 6 revamp themes', () => {
-    expect(THEME_IDS).toEqual(['light', 'dark', 'aurora', 'nord', 'sepia', 'dracula']);
-    expect(THEMES).toHaveLength(6);
+  it('defines exactly the 7 themes', () => {
+    expect(THEME_IDS).toEqual(['light', 'dark', 'aurora', 'nord', 'sepia', 'dracula', 'christmas']);
+    expect(THEMES).toHaveLength(7);
   });
 
   it('every theme has complete surface mappings', () => {
@@ -38,6 +38,7 @@ describe('themes registry', () => {
     expect(themeMode('aurora')).toBe('dark');
     expect(themeMode('nord')).toBe('dark');
     expect(themeMode('dracula')).toBe('dark');
+    expect(themeMode('christmas')).toBe('dark');
   });
 
   it('themeMeta resolves and falls back to light', () => {
