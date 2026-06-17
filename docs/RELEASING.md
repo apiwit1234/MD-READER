@@ -12,45 +12,53 @@ restart — no installer re-run. End users never need any tools installed.
    dotnet tool install -g vpk
    ```
 
-2. Create a GitHub personal access token with `repo` scope and set it for the
-   session before publishing:
-
-   ```powershell
-   $env:GITHUB_TOKEN = "<your token>"
-   ```
+2. A GitHub token with `repo` scope. You do **not** need to type or paste it:
+   `scripts/release.ps1` uses `$env:GITHUB_TOKEN`/`$env:GH_TOKEN` if set,
+   otherwise reads the credential Git Credential Manager already stored when
+   you first `git push`ed (Windows Credential Manager entry
+   `git:https://github.com`). So once `git push` works, the release script is
+   authenticated automatically.
 
 ## Release steps (every time)
 
-1. Finish the feature branch per [WORKFLOW.md](WORKFLOW.md):
+1. Finish the feature branch per [WORKFLOW.md](WORKFLOW.md), then bump + push:
 
    ```sh
    git checkout main
    git merge --no-ff feat/<name>
-   npm run release        # bumps patch version, commits, tags
+   npm version minor        # or `patch`; commits + tags vX.Y.Z
    git push --follow-tags
    ```
 
-2. Pack and publish:
+2. Build both update channels and publish, in one command:
 
    ```powershell
-   $env:GITHUB_TOKEN = "<your token>"
    npm run release:publish
    ```
 
-   This runs `electron-builder --dir` (unpacked app under
-   `release/win-unpacked`), wraps it with `vpk pack` into
-   `release/velopack/`, and uploads to GitHub Releases.
+   This runs `scripts/release.ps1`, which:
+   - cleans `release/`, runs `npm run dist` (NSIS + portable + zip +
+     `latest.yml`), then `vpk pack` (Velopack `Setup.exe` + full `.nupkg` +
+     `RELEASES`);
+   - creates **one published** GitHub release for the current tag and uploads
+     **every** asset itself via the GitHub API — retrying transient TLS resets
+     and verifying each asset's byte size;
+   - verifies `/releases/latest` resolves to this version and that both
+     `latest.yml` (electron-updater) and `RELEASES` (Velopack) reference it.
 
-   **Keep `release/velopack/` between releases** — vpk diffs against the
-   previous full package found there to generate the delta. If it's empty
-   (fresh clone), download the previous release's `.nupkg` first with
-   `vpk download github --repoUrl https://github.com/apiwit1234/MD-READER --outputDir release/velopack`.
+   > Why a script and not `electron-builder --publish` + `vpk upload`? Using
+   > both tools' publishers against one tag races on draft-vs-published state.
+   > A single API publisher is deterministic. This is how `v1.1.0` shipped.
 
-3. Verify the GitHub release contains:
-   - `PAXReader-win-Setup.exe` (new-user installer, self-contained)
-   - `PAXReader-<version>-full.nupkg`
-   - `PAXReader-<version>-delta.nupkg` (absent only on the very first release)
-   - `RELEASES`
+   On a network drop mid-upload, just re-run `npm run release:publish` — it
+   skips assets already on the release and retries the rest. The script does a
+   full rebuild each run; that's intentional and safe.
+
+3. The script fails loudly if anything is missing. A good release has 8 assets:
+   `latest.yml`, `PAX-Reader-<version>-x64.exe` (+ `.blockmap`, `.zip`,
+   `-portable.exe`), `PAXReader-win-Setup.exe`, `PAXReader-<version>-full.nupkg`,
+   `RELEASES`. Delta `.nupkg`s appear automatically once a prior full package
+   exists in the release feed.
 
 ## How users install and update
 
@@ -106,10 +114,12 @@ a NEW higher version.
 
 - Builds are unsigned: Windows SmartScreen may warn on the FIRST manual
   install. Delta updates applied by an installed app do not show that warning.
-- Migration from the old NSIS installs (≤ v1.0.x): the migration release
-  publishes BOTH the final NSIS artifacts (`npm run dist -- --publish always`,
-  needs `$env:GH_TOKEN`) and the Velopack artifacts in the same tagged
-  release. Old installs auto-update to it via electron-updater, then show a
-  one-click "Upgrade" prompt that installs the Velopack copy and removes the
-  NSIS one. After that release ships, the NSIS/zip targets and `publish`
-  block in package.json can be removed.
+- Migration from the old NSIS installs (≤ v1.0.x) shipped in **v1.1.0**: that
+  release carries BOTH the NSIS artifacts (`latest.yml` + installer) and the
+  Velopack artifacts. Old installs auto-update to it via electron-updater,
+  then show a one-click "Upgrade" prompt that installs the Velopack copy and
+  removes the NSIS one. `scripts/release.ps1` always builds and uploads both
+  sets, so every release keeps the NSIS channel alive for any installs still
+  on the electron-updater path. Once you're confident no NSIS-era installs
+  remain, the `nsis`/`zip` targets and the `publish` block in package.json can
+  be dropped and the NSIS assets removed from `scripts/release.ps1`.

@@ -20,7 +20,7 @@
     "test:watch": "vitest",
     "release": "npm version patch",
     "release:pack": "npm run dist:dir && vpk pack --packId PAXReader --packVersion %npm_package_version% --packDir \"release/win-unpacked\" --mainExe \"PAX Reader.exe\" --packTitle \"PAX Reader\" --icon build/icon.ico --outputDir release/velopack",
-    "release:publish": "npm run release:pack && vpk upload github --repoUrl https://github.com/apiwit1234/MD-READER --publish --releaseName \"PAX Reader %npm_package_version%\" --tag v%npm_package_version% --outputDir release/velopack"
+    "release:publish": "powershell -ExecutionPolicy Bypass -File scripts/release.ps1"
   },
   "dependencies": {
     "node-pty": "^1.1.0",
