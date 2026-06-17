@@ -1,4 +1,4 @@
-# PAX Reader release — builds both update channels locally and publishes ONE
+# PAX Reader release -- builds both update channels locally and publishes ONE
 # GitHub release with every asset, via the GitHub API (single publisher, no
 # electron-builder/vpk publish race, no draft ambiguity).
 #
@@ -104,7 +104,7 @@ foreach ($a in $assets) {
   }
   if (-not $done) { $failed += $name }
 }
-if ($failed.Count) { throw "Upload failed for: $($failed -join ', '). Re-run the script — it skips assets already uploaded." }
+if ($failed.Count) { throw "Upload failed for: $($failed -join ', '). Re-run the script -- it skips assets already uploaded." }
 
 # --- verify: every expected asset is present + both feeds name this version ---
 # Read assets from the API and fetch feed files via their direct
@@ -123,5 +123,5 @@ $winjson = Get-AssetText 'releases.win.json'   # the feed Velopack UpdateManager
 if ($yml -notmatch [Regex]::Escape("version: $version")) { throw 'latest.yml did not resolve to this version' }
 if ($winjson -notmatch [Regex]::Escape("PAXReader-$version-full.nupkg")) { throw 'releases.win.json (Velopack feed) did not list this version' }
 
-Write-Host "`nDONE — $tag published with all assets; both update channels verified." -ForegroundColor Green
+Write-Host "`nDONE -- $tag published with all assets; both update channels verified." -ForegroundColor Green
 Write-Host "https://github.com/$repo/releases/tag/$tag"
