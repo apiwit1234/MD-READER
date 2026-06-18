@@ -4,6 +4,7 @@ import type { FsNode, OpenedFolder } from '@/types';
 import { FileTree } from './FileTree';
 import { getApi, hasApi } from '@/lib/electron-api';
 import { filterTree, pruneToMarkdown } from '@/lib/filter';
+import { progressPercent } from '@/lib/load-progress';
 import { useAutoHideMenu } from '@/lib/useAutoHideMenu';
 import { ChevronDown, ChevronRight, Clipboard, RefreshCw, X } from 'lucide-react';
 
@@ -49,6 +50,8 @@ export function FolderSection({
 }: Props) {
   const [tree, setTree] = useState<FsNode | null>(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<{ scanned: number; total: number } | null>(null);
+  const showBarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -116,7 +119,23 @@ export function FolderSection({
     if (!hasApi()) return;
     if (!silent) setLoading(true);
     setError(null);
-    getApi().fs.tree(folder.hostPath)
+
+    const api = getApi();
+    const canStream = !silent && typeof api.fs.treeProgress === 'function';
+    let unsub: (() => void) | null = null;
+    let token = '';
+
+    if (canStream) {
+      token = `${folder.id}:${(typeof performance !== 'undefined' ? performance.now() : 0)}`;
+      // Only reveal the bar if the load is slow enough to matter.
+      showBarTimerRef.current = setTimeout(() => setProgress({ scanned: 0, total: 0 }), 150);
+      unsub = api.fs.onTreeProgress((p) => {
+        if (p.token === token) setProgress({ scanned: p.scanned, total: p.total });
+      });
+    }
+
+    const treePromise = canStream ? api.fs.treeProgress(folder.hostPath, token) : api.fs.tree(folder.hostPath);
+    treePromise
       .then((d) => {
         const sig = treeSig(d);
         if (sig !== sigRef.current) {
@@ -125,10 +144,17 @@ export function FolderSection({
         }
       })
       .catch((e: Error) => setError(e.message))
-      .finally(() => { if (!silent) setLoading(false); });
-  }, [folder.hostPath, folder.isVirtual, folder.virtualTree]);
+      .finally(() => {
+        if (showBarTimerRef.current) { clearTimeout(showBarTimerRef.current); showBarTimerRef.current = null; }
+        if (unsub) unsub();
+        setProgress(null);
+        if (!silent) setLoading(false);
+      });
+  }, [folder.hostPath, folder.id, folder.isVirtual, folder.virtualTree]);
 
   useEffect(() => { loadTree(); }, [loadTree]);
+
+  useEffect(() => () => { if (showBarTimerRef.current) clearTimeout(showBarTimerRef.current); }, []);
 
   // Refresh when the window regains focus (cheap — no continuous filesystem
   // watching), throttled so rapid focus/blur doesn't rescan repeatedly. The
@@ -221,7 +247,20 @@ export function FolderSection({
           </button>
         </div>
       )}
-      {!collapsed && loading && <div className="px-2 text-xs text-muted">Loading…</div>}
+      {!collapsed && loading && progress && (
+        <div className="px-2 py-1">
+          <div className="mb-1 text-xs text-muted">
+            Reading {progress.scanned}{progress.total ? ` / ${progress.total}` : ''} files…
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded bg-surface-2">
+            <div
+              className="h-full bg-accent transition-[width] duration-150"
+              style={{ width: `${progressPercent(progress.scanned, progress.total)}%` }}
+            />
+          </div>
+        </div>
+      )}
+      {!collapsed && loading && !progress && <div className="px-2 text-xs text-muted">Loading…</div>}
       {!collapsed && error && <div className="px-2 text-xs text-red-600">{error}</div>}
       {!collapsed && displayed?.children && (
         <FileTree
