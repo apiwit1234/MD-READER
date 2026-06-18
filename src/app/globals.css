@@ -237,10 +237,11 @@ body {
 }
 .festive-santa {
   position: absolute;
-  top: 9%;
+  top: 8%;
   left: 0;
-  width: 190px;
-  filter: drop-shadow(0 0 6px rgb(248 178 41 / 0.55));
+  width: 280px;
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.35));
   animation: festive-ride 9s linear forwards;
   will-change: transform;
 }
@@ -251,6 +252,38 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .festive-overlay { display: none; }
+}
+
+/* ---- Bat swarm (Dracula theme): one-time fly-across on activation. ---- */
+.bat-swarm {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bat-flyer {
+  position: absolute;
+  left: 0;
+  animation-name: bat-fly;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  will-change: transform;
+}
+.bat-flyer .bat {
+  animation: bat-flap 0.28s ease-in-out infinite;
+}
+@keyframes bat-fly {
+  0%   { transform: translateX(-12vw) translateY(0); }
+  50%  { transform: translateX(50vw) translateY(-6vh); }
+  100% { transform: translateX(112vw) translateY(2vh); }
+}
+@keyframes bat-flap {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(0.7); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bat-swarm { display: none; }
 }
 
 /* Default reading font: Latin → Inter, Thai → Noto Sans Thai. A font picked
@@ -306,22 +339,30 @@ select option {
   color: rgb(var(--c-fg));
 }
 
-/* Themed scrollbars (app chrome + xterm viewport). */
+/* Themed scrollbars (app chrome + xterm viewport). Thumb uses the foreground
+   token at low alpha so it stays visible across every theme, brightening to the
+   accent on hover. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--c-border)) rgb(var(--c-surface));
+  scrollbar-color: rgb(var(--c-fg) / 0.28) rgb(var(--c-surface));
 }
 ::-webkit-scrollbar,
-.xterm-viewport::-webkit-scrollbar { width: 9px; height: 9px; }
+.xterm-viewport::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track,
 .xterm-viewport::-webkit-scrollbar-track { background: rgb(var(--c-surface)); }
 ::-webkit-scrollbar-thumb,
 .xterm-viewport::-webkit-scrollbar-thumb {
-  background: rgb(var(--c-border));
-  border-radius: 6px;
+  background: rgb(var(--c-fg) / 0.28);
+  border: 2px solid rgb(var(--c-surface));
+  border-radius: 8px;
+  min-height: 28px;
 }
 ::-webkit-scrollbar-thumb:hover,
 .xterm-viewport::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent)); }
+
+/* Opt-in: always reserve room for the scrollbar so content doesn't shift when it
+   appears (used by the sidebar file list). */
+.themed-scroll { scrollbar-gutter: stable; }
 
 /* Search find-hit highlights (from the search feature) — preserved.
    The `.dark` class is applied for any dark-base theme (see page.tsx),

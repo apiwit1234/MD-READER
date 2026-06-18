@@ -4,6 +4,12 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld('mdreader', {
   fs: {
     tree: (absPath) => ipcRenderer.invoke('fs:tree', absPath),
+    treeProgress: (absPath, token) => ipcRenderer.invoke('fs:treeProgress', { absPath, token }),
+    onTreeProgress: (cb) => {
+      const listener = (_e, p) => cb(p);
+      ipcRenderer.on('fs:tree:progress', listener);
+      return () => ipcRenderer.removeListener('fs:tree:progress', listener);
+    },
     browse: (absPath) => ipcRenderer.invoke('fs:browse', absPath),
     read: (absPath) => ipcRenderer.invoke('fs:read', absPath),
     write: (absPath, content, roots) => ipcRenderer.invoke('fs:write', { absPath, content, roots }),
@@ -59,6 +65,7 @@ contextBridge.exposeInMainWorld('mdreader', {
     openLog: () => ipcRenderer.invoke('app:openLog'),
     logPath: () => ipcRenderer.invoke('app:logPath'),
     versionInfo: () => ipcRenderer.invoke('app:versionInfo'),
+    openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
   },
   git: {
     detect: (folderPath) => ipcRenderer.invoke('git:detect', folderPath),

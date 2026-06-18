@@ -56,13 +56,15 @@ function DirNode({
   forceExpanded?: boolean;
   flashRelativePath?: string | null;
 }) {
-  const [open, setOpen] = useState(false);
-  const isOpen = forceExpanded || open;
+  // null = follow forceExpanded (e.g. a search auto-expands dirs); once the user
+  // clicks, their explicit choice wins so folders stay collapsible while filtering.
+  const [open, setOpen] = useState<boolean | null>(null);
+  const isOpen = open ?? !!forceExpanded;
   return (
     <li>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!isOpen)}
         className="flex w-full items-center gap-1 rounded px-1.5 py-0.5 text-left text-fg hover:bg-surface-2"
         style={{ paddingLeft: 4 + depth * 12 }}
       >

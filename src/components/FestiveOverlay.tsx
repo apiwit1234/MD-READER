@@ -28,29 +28,6 @@ function makeFlakes(): Flake[] {
   }));
 }
 
-/** A gold silhouette of Santa's sleigh pulled by a reindeer, flying left→right. */
-function SantaSleigh() {
-  return (
-    <svg className="festive-santa" viewBox="0 0 200 90" fill="#F8B229" aria-hidden>
-      <path d="M96 50 C120 44 130 46 138 50" stroke="#F8B229" strokeWidth="2" fill="none" />
-      <ellipse cx="150" cy="50" rx="17" ry="8" />
-      <rect x="139" y="56" width="2.6" height="15" rx="1" />
-      <rect x="146" y="57" width="2.6" height="17" rx="1" />
-      <rect x="156" y="56" width="2.6" height="15" rx="1" />
-      <rect x="163" y="57" width="2.6" height="17" rx="1" />
-      <path d="M133 46 q-5 -1 -7 3 q5 2 8 -1 z" />
-      <path d="M165 47 q7 -3 9 -12 q5 4 3 11 q5 1 7 5 q-9 5 -19 1 z" />
-      <path d="M176 33 l-2 -9 m2 9 l4 -7 m-4 7 l-5 -6" stroke="#F8B229" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M34 64 q-2 -14 12 -16 l30 -3 q8 -1 9 6 q1 7 -6 9 l-33 3 q-7 1 -12 1 z" />
-      <path d="M34 64 q-7 0 -8 -7 q-1 -5 4 -6" stroke="#F8B229" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-      <path d="M52 46 q3 -12 12 -11 q8 1 7 12 z" />
-      <circle cx="60" cy="31" r="4.5" />
-      <path d="M55 30 q3 -10 11 -7 q-1 4 -7 7 z" />
-      <circle cx="55" cy="30" r="1.8" fill="#fff" />
-    </svg>
-  );
-}
-
 /**
  * Christmas-theme ambient layer: continuous snowfall plus a Santa sleigh that
  * rides across on app open, on every new tab, and at random intervals. Renders
@@ -101,7 +78,8 @@ export function FestiveOverlay({ theme, tabCount }: Props) {
       ))}
       {santaId !== null && (
         <div key={santaId} onAnimationEnd={() => setSantaId(null)}>
-          <SantaSleigh />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="festive-santa" src="/festive/santa-sleigh.png" alt="" aria-hidden draggable={false} />
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { getApi, hasApi, type AppSettings, type CustomFont } from '@/lib/electron-api';
 import { BUILTIN_FONTS } from '@/lib/fonts';
+import { ToggleSwitch } from './ToggleSwitch';
 
 type Props = {
   settings: AppSettings | null;
@@ -69,12 +70,11 @@ export function FontsSection({ settings, onUpdateSettings, customFonts, onCustom
           Separate Thai / English fonts
           <span className="block text-xs text-muted">For fonts that only cover one language</span>
         </span>
-        <input
-          type="checkbox"
+        <ToggleSwitch
           aria-label="Separate Thai / English fonts"
           checked={split}
           disabled={!settings}
-          onChange={(e) => onUpdateSettings({ fontSplit: e.target.checked })}
+          onChange={(v) => onUpdateSettings({ fontSplit: v })}
         />
       </label>
 

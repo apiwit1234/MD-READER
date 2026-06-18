@@ -36,6 +36,7 @@ export type AppSettings = {
   fontSplit: boolean;
   fontEnglish: string;
   fontThai: string;
+  showHtmlInMd: boolean;
 };
 
 export type GitResult = { ok: boolean; code: number; stdout: string; stderr: string };
@@ -44,6 +45,8 @@ export type GitDetect = { isRepo: boolean; root: string | null; branch: string |
 type MdReader = {
   fs: {
     tree: (absPath: string) => Promise<FsNode>;
+    treeProgress: (absPath: string, token: string) => Promise<FsNode>;
+    onTreeProgress: (cb: (p: { token: string; scanned: number; total: number }) => void) => () => void;
     browse: (absPath: string) => Promise<BrowseResponse>;
     read: (absPath: string) => Promise<ReadResponse>;
     write: (absPath: string, content: string, roots: string[]) => Promise<{ ok: true } | { ok: false; error: string }>;
@@ -73,6 +76,7 @@ type MdReader = {
     openLog: () => Promise<string>;
     logPath: () => Promise<string>;
     versionInfo: () => Promise<{ current: string; updatedFrom: string | null }>;
+    openExternal: (url: string) => Promise<void>;
   };
   git: {
     detect: (folderPath: string) => Promise<GitDetect>;

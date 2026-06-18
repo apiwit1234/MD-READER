@@ -11,6 +11,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsModal } from '@/components/SettingsModal';
 import { UpdateCenter } from '@/components/UpdateCenter';
 import { FestiveOverlay } from '@/components/FestiveOverlay';
+import { BatSwarm } from '@/components/BatSwarm';
+import { HtmlView } from '@/components/HtmlView';
 import { Settings } from 'lucide-react';
 import { themeMode } from '@/lib/themes';
 import { loadState, saveState, defaultState, clearedState, saveSearchState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
@@ -37,7 +39,7 @@ import { CodeEditor } from '@/components/CodeEditor';
 import { GitPanel } from '@/components/GitPanel';
 import { DiffView } from '@/components/DiffView';
 import type { GitRepo, GitFileStatus } from '@/types';
-import { isMarkdownPath, isMermaidPath } from '@/lib/file-kinds';
+import { isMarkdownPath, isMermaidPath, isHtmlPath } from '@/lib/file-kinds';
 
 const MarkdownView = dynamic(
   () => import('@/components/MarkdownView').then((m) => m.MarkdownView),
@@ -87,10 +89,11 @@ function loadViewFlags(): ViewFlags {
   }
 }
 
-/** Tabs visible in MD mode: markdown/diagram files plus synthetic mermaid/diff tabs. */
-function isMdVisible(t: { folderId: string; relativePath: string }): boolean {
+/** Tabs visible in MD mode: markdown/diagram files (and HTML when enabled) plus synthetic tabs. */
+function isMdVisible(t: { folderId: string; relativePath: string }, includeHtml: boolean): boolean {
   if (t.folderId === '__diagrams__' || t.folderId === '__diff__') return true;
-  return /\.(md|markdown|mmd|mermaid)$/i.test(t.relativePath);
+  if (/\.(md|markdown|mmd|mermaid)$/i.test(t.relativePath)) return true;
+  return includeHtml && /\.html?$/i.test(t.relativePath);
 }
 
 /** Absolute host path for a file inside an opened (non-virtual) folder. */
@@ -113,6 +116,8 @@ export default function Page() {
   const [toast, setToast] = useState<string | null>(null);
   // Cache file content by absolute path so switching back to an open tab is instant.
   const [contentCache, setContentCache] = useState<Record<string, { content: string; hostPath: string }>>({});
+  // Per active-tab HTML navigation: maps tab key -> { stack, index } for back/forward.
+  const [htmlNav, setHtmlNav] = useState<{ key: string; stack: string[]; index: number } | null>(null);
 
   // Once a user has ever shown the terminal, we keep TerminalPanel mounted so toggling off doesn't kill PTYs.
   const [terminalShownOnce, setTerminalShownOnce] = useState(false);
@@ -682,12 +687,13 @@ export default function Page() {
   // MD mode shows only markdown. If a code file is active when entering MD mode,
   // switch to the first open markdown tab — or leave nothing active (empty page).
   useEffect(() => {
-    if (mode !== 'md' || !activeTab || isMdVisible(activeTab)) return;
+    const includeHtml = appSettings?.showHtmlInMd ?? true;
+    if (mode !== 'md' || !activeTab || isMdVisible(activeTab, includeHtml)) return;
     setState((s) => {
-      const firstMd = s.openTabs.find(isMdVisible);
+      const firstMd = s.openTabs.find((t) => isMdVisible(t, includeHtml));
       return { ...s, openTabs: s.openTabs.map((t) => ({ ...t, active: firstMd ? t === firstMd : false })) };
     });
-  }, [mode, activeTab]);
+  }, [mode, activeTab, appSettings?.showHtmlInMd]);
 
   // Point the git panel at the repo containing the active file.
   useEffect(() => {
@@ -807,8 +813,8 @@ export default function Page() {
 
   // MD mode only lists markdown tabs; Code/Terminal list everything.
   const visibleTabViews = useMemo(
-    () => (mode === 'md' ? tabViews.filter(isMdVisible) : tabViews),
-    [tabViews, mode],
+    () => (mode === 'md' ? tabViews.filter((t) => isMdVisible(t, appSettings?.showHtmlInMd ?? true)) : tabViews),
+    [tabViews, mode, appSettings?.showHtmlInMd],
   );
 
   function activeAbsPath(): string | null {
@@ -834,6 +840,13 @@ export default function Page() {
   const frozenMdRef = useRef({ content: liveMdContent, isDiagram: liveMdIsDiagram });
   if (mode === 'md') frozenMdRef.current = { content: liveMdContent, isDiagram: liveMdIsDiagram };
   const mdPane = frozenMdRef.current;
+
+  const liveMdIsHtml = activeTab ? isHtmlPath(activeTab.relativePath) && (appSettings?.showHtmlInMd ?? true) : false;
+  // The relative path actually shown (navigation may have moved within the folder).
+  const activeKey = activeTab ? `${activeTab.folderId}::${activeTab.relativePath}` : '';
+  const htmlRelPath = (htmlNav && htmlNav.key === activeKey)
+    ? htmlNav.stack[htmlNav.index]
+    : (activeTab?.relativePath ?? '');
 
   const liveCodePath = activeAbsPath();
   const frozenCodePathRef = useRef(liveCodePath);
@@ -870,6 +883,43 @@ export default function Page() {
       showToast('Save failed: ' + res.error);
     }
   }
+
+  const navigateHtml = useCallback(async (toRelative: string) => {
+    if (!activeTab) return;
+    const folder = state.openedFolders.find((f) => f.id === activeTab.folderId);
+    if (!folder || folder.isVirtual) return;
+    // classifyLink guarantees toRelative has no backslashes and no `..`; normalize
+    // only the host root and assert containment so a crafted page can't escape it.
+    const root = folder.hostPath.replace(/\\/g, '/').replace(/\/+$/, '');
+    const abs = `${root}/${toRelative}`;
+    if (!abs.startsWith(`${root}/`)) { showToast('Could not open linked page'); return; }
+    try {
+      const res = await getApi().fs.read(abs);
+      // seed (baseline + buffer) — this is fresh disk content, NOT an edit, so it
+      // must not register as dirty (a dirty buffer blocks window close via beforeunload).
+      contentStoreRef.current.seed(abs, res.content);
+      setContentCache((c) => ({ ...c, [abs]: { content: res.content, hostPath: abs } }));
+      const key = `${activeTab.folderId}::${activeTab.relativePath}`;
+      setHtmlNav((prev) => {
+        const base = prev && prev.key === key ? prev : { key, stack: [activeTab.relativePath], index: 0 };
+        const stack = base.stack.slice(0, base.index + 1);
+        stack.push(toRelative);
+        return { key, stack, index: stack.length - 1 };
+      });
+    } catch {
+      showToast('Could not open linked page');
+    }
+  }, [activeTab, state.openedFolders]);
+
+  const htmlContent = (() => {
+    if (!liveMdIsHtml || !activeTab) return '';
+    const folder = state.openedFolders.find((f) => f.id === activeTab.folderId);
+    if (!folder || folder.isVirtual) return mdPane.content;
+    const root = folder.hostPath.replace(/\\/g, '/').replace(/\/+$/, '');
+    const abs = `${root}/${htmlRelPath}`;
+    const buffered = contentStoreRef.current.get(abs);
+    return buffered !== undefined ? buffered : mdPane.content;
+  })();
 
   function setTheme(theme: Theme) {
     setState((s) => ({ ...s, theme }));
@@ -992,7 +1042,10 @@ export default function Page() {
       return { ...s, openTabs: [...cleared, { folderId, relativePath, active: true }] };
     });
     // Opening a non-markdown/diagram file in MD mode is meaningless; jump to Code mode.
-    if (mode === 'md' && !isMarkdownPath(relativePath) && !isMermaidPath(relativePath)) {
+    // HTML stays in MD mode when the setting is on (rendered by HtmlView).
+    const includeHtml = appSettings?.showHtmlInMd ?? true;
+    const isHtml = isHtmlPath(relativePath);
+    if (mode === 'md' && !isMarkdownPath(relativePath) && !isMermaidPath(relativePath) && !(isHtml && includeHtml)) {
       setMode('code');
     }
   }
@@ -1315,6 +1368,7 @@ export default function Page() {
       <UpdateCenter />
 
       <FestiveOverlay theme={state.theme} tabCount={state.openTabs.length} />
+      <BatSwarm theme={state.theme} />
 
       {bridgeMissing && (
         <div className="bg-amber-100 px-4 py-1 text-xs text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
@@ -1345,6 +1399,7 @@ export default function Page() {
               folders={state.openedFolders}
               activeFile={activeFileForSidebar}
               markdownOnly={mode === 'md'}
+              includeHtml={appSettings?.showHtmlInMd ?? true}
               menuAutoHide={appSettings?.contextMenuAutoHide ?? true}
               gitPanel={
                 <GitPanel
@@ -1415,7 +1470,19 @@ export default function Page() {
                     ) : activeTab ? (
                       <>
                         <div className="h-full" hidden={mode !== 'md'}>
-                          {mdPane.isDiagram ? (
+                          {liveMdIsHtml ? (
+                            <HtmlView
+                              html={htmlContent}
+                              relativePath={htmlRelPath}
+                              theme={state.theme}
+                              onNavigate={navigateHtml}
+                              canBack={!!htmlNav && htmlNav.key === activeKey && htmlNav.index > 0}
+                              canForward={!!htmlNav && htmlNav.key === activeKey && htmlNav.index < htmlNav.stack.length - 1}
+                              onBack={() => setHtmlNav((p) => (p && p.index > 0 ? { ...p, index: p.index - 1 } : p))}
+                              onForward={() => setHtmlNav((p) => (p && p.index < p.stack.length - 1 ? { ...p, index: p.index + 1 } : p))}
+                              onZoom={changeZoom}
+                            />
+                          ) : mdPane.isDiagram ? (
                             <DiagramView
                               source={mdPane.content}
                               theme={state.theme}

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { getApi, hasApi, type AppSettings } from '@/lib/electron-api';
 import { requestUpdateRestart } from '@/lib/update-restart';
+import { ToggleSwitch } from './ToggleSwitch';
 
 type Props = {
   settings: AppSettings | null;
@@ -50,12 +51,11 @@ export function UpdatesSection({ settings, onUpdateSettings }: Props) {
       <div className="rounded-theme border border-border p-2.5 text-sm">
         <label className="flex items-center justify-between gap-2">
           <span>Check for updates at startup</span>
-          <input
-            type="checkbox"
+          <ToggleSwitch
             aria-label="Check for updates at startup"
             checked={settings?.autoUpdate ?? true}
             disabled={!hasApi() || !settings}
-            onChange={(e) => onUpdateSettings({ autoUpdate: e.target.checked })}
+            onChange={(v) => onUpdateSettings({ autoUpdate: v })}
           />
         </label>
         <p className="mt-1 text-xs text-muted">

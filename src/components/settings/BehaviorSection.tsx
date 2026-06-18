@@ -1,6 +1,7 @@
 'use client';
 import type { AppSettings } from '@/lib/electron-api';
 import { applyZoomStep, ZOOM_MAX, ZOOM_MIN } from '@/lib/zoom';
+import { ToggleSwitch } from './ToggleSwitch';
 
 type Props = {
   settings: AppSettings | null;
@@ -17,12 +18,11 @@ export function BehaviorSection({ settings, onUpdateSettings }: Props) {
           Auto-hide context menus
           <span className="block text-xs text-muted">Right-click menus close when the mouse leaves them</span>
         </span>
-        <input
-          type="checkbox"
+        <ToggleSwitch
           aria-label="Auto-hide context menus"
           checked={settings?.contextMenuAutoHide ?? true}
           disabled={!settings}
-          onChange={(e) => onUpdateSettings({ contextMenuAutoHide: e.target.checked })}
+          onChange={(v) => onUpdateSettings({ contextMenuAutoHide: v })}
         />
       </label>
 
@@ -63,6 +63,20 @@ export function BehaviorSection({ settings, onUpdateSettings }: Props) {
           </button>
         </span>
       </div>
+
+      <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Markdown mode</div>
+      <label className="flex items-center justify-between rounded-theme border border-border p-2.5 text-sm">
+        <span>
+          Show HTML files in MD mode
+          <span className="block text-xs text-muted">List .html files in the sidebar and render them in the reader</span>
+        </span>
+        <ToggleSwitch
+          aria-label="Show HTML files in MD mode"
+          checked={settings?.showHtmlInMd ?? true}
+          disabled={!settings}
+          onChange={(v) => onUpdateSettings({ showHtmlInMd: v })}
+        />
+      </label>
     </div>
   );
 }

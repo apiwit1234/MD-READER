@@ -16,6 +16,7 @@ const fs = require('node:fs').promises;
 const http = require('node:http');
 const { createReadStream, existsSync, statSync, appendFileSync, watch: fsWatch } = require('node:fs');
 const { scanFiles } = require('./search-core.cjs');
+const { buildTree, countEntries, SKIP_DIRS } = require('./fs-tree.cjs');
 const git = require('./git.cjs');
 const { createSettingsStore } = require('./settings.cjs');
 const { createErrorFileWriter } = require('./log-files.cjs');
@@ -172,6 +173,12 @@ ipcMain.handle('update:install', () => {
 
 // Tells the renderer (once per version change) that the app was just updated,
 // so it can show an "updated to vX" confirmation after the silent install.
+ipcMain.handle('app:openExternal', async (_e, url) => {
+  if (typeof url === 'string' && /^(https?:|mailto:)/i.test(url)) {
+    await shell.openExternal(url);
+  }
+});
+
 ipcMain.handle('app:versionInfo', () => {
   const store = getSettingsStore();
   const lastRun = store.read().lastRunVersion;
@@ -251,40 +258,7 @@ function startStaticServer(rootDir) {
 
 // Path safety: everything must stay under a single user-chosen root, configurable per session.
 // In Electron we can read from anywhere the user explicitly picks; the safety is "did the user pick it".
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', 'out', 'target', '.next', '.nuxt']);
-
-function sortChildren(children) {
-  children.sort((a, b) => {
-    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-}
-
-async function buildTree(absRoot, relativeFromRoot = '') {
-  const fullPath = relativeFromRoot ? path.join(absRoot, relativeFromRoot) : absRoot;
-  let entries;
-  try {
-    entries = await fs.readdir(fullPath, { withFileTypes: true });
-  } catch {
-    return { name: path.basename(absRoot), type: 'dir', relativePath: relativeFromRoot, children: [] };
-  }
-  const children = [];
-  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.name.startsWith('.')) continue;
-    if (entry.isDirectory() && SKIP_DIRS.has(entry.name)) continue;
-    const rel = relativeFromRoot ? `${relativeFromRoot}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      const sub = await buildTree(absRoot, rel);
-      if (sub.children && sub.children.length > 0) {
-        children.push({ name: entry.name, type: 'dir', relativePath: rel, children: sub.children });
-      }
-    } else if (entry.isFile()) {
-      children.push({ name: entry.name, type: 'file', relativePath: rel });
-    }
-  }
-  sortChildren(children);
-  return { name: path.basename(fullPath), type: 'dir', relativePath: relativeFromRoot, children };
-}
+// SKIP_DIRS and buildTree are imported from ./fs-tree.cjs (shared, unit-testable).
 
 async function browseOneLevel(absDir) {
   const entries = await fs.readdir(absDir, { withFileTypes: true });
@@ -333,6 +307,22 @@ async function walkMarkdownFiles(absRoot) {
 }
 
 ipcMain.handle('fs:tree', async (_e, absPath) => buildTree(absPath));
+
+ipcMain.handle('fs:treeProgress', async (e, { absPath, token }) => {
+  const total = await countEntries(absPath);
+  let scanned = 0;
+  let lastSent = 0;
+  const tick = () => {
+    scanned += 1;
+    const now = Date.now();
+    if (now - lastSent >= 50 || scanned === total) {
+      lastSent = now;
+      if (!e.sender.isDestroyed()) e.sender.send('fs:tree:progress', { token, scanned, total });
+    }
+  };
+  const tree = await buildTree(absPath, '', tick);
+  return tree;
+});
 
 ipcMain.handle('fs:browse', async (_e, absPath) => {
   const entries = await browseOneLevel(absPath);
@@ -734,7 +724,10 @@ async function createWindow(opts = {}) {
   });
 
   // Surface renderer load failures for diagnosis instead of leaving the user with a blank window.
-  win.webContents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL) => {
+  // Only react to MAIN-frame failures: sub-frames (e.g. the sandboxed about:srcdoc iframe used
+  // by the HTML reader) must not replace the whole window. ERR_ABORTED (-3) is benign.
+  win.webContents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (!isMainFrame || errorCode === -3) return;
     if (!win.isDestroyed()) {
       const escaped = String(errorDescription).replace(/</g, '&lt;');
       const html = `<html><body style="font-family:system-ui;padding:24px;color:#b91c1c"><h2>Failed to load window</h2><pre>${escaped}</pre><p style="color:#64748b">URL: ${validatedURL}</p></body></html>`;

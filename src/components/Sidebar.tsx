@@ -19,6 +19,7 @@ type Props = {
   folders: OpenedFolder[];
   activeFile: { folderId: string; relativePath: string } | null;
   markdownOnly?: boolean;
+  includeHtml?: boolean;
   gitPanel?: ReactNode;
   /** Toggle chip state — drives animated collapse/expand of the git split.
    *  The Panel stays mounted so the global [data-panel] flex transition runs. */
@@ -39,6 +40,7 @@ export function Sidebar({
   folders,
   activeFile,
   markdownOnly,
+  includeHtml,
   gitPanel,
   gitVisible,
   onGitVisibilityChange,
@@ -205,27 +207,32 @@ export function Sidebar({
         </div>
       </div>
       <PanelGroup direction="vertical" autoSaveId="mdreader.sidebar.split.v1" className="min-h-0 flex-1">
-        <Panel defaultSize={70} minSize={20} className="overflow-y-auto p-2">
-          {folders.map((f) => (
-            <FolderSection
-              key={f.id}
-              folder={f}
-              activeFile={activeFile}
-              markdownOnly={markdownOnly}
-              onPickFile={onPickFile}
-              onClose={onCloseFolder}
-              onCopyFolderPath={onCopyFolderPath}
-              onDropFolderOnTerminal={onDropFolderOnTerminal}
-              filter={filter}
-              flashRelativePath={flashing?.folderId === f.id ? flashing.relativePath : null}
-              menuAutoHide={menuAutoHide}
-            />
-          ))}
-          {filter && !filteredHasAny && (
-            <p className="px-2 py-3 text-xs text-muted">
-              No files match &quot;{filter}&quot;
-            </p>
-          )}
+        <Panel defaultSize={70} minSize={20} className="min-h-0">
+          {/* Inner scroller: react-resizable-panels forces inline overflow:hidden on
+              Panel, which would defeat a Tailwind overflow class — so scroll here. */}
+          <div className="themed-scroll h-full overflow-y-auto p-2">
+            {folders.map((f) => (
+              <FolderSection
+                key={f.id}
+                folder={f}
+                activeFile={activeFile}
+                markdownOnly={markdownOnly}
+                includeHtml={includeHtml}
+                onPickFile={onPickFile}
+                onClose={onCloseFolder}
+                onCopyFolderPath={onCopyFolderPath}
+                onDropFolderOnTerminal={onDropFolderOnTerminal}
+                filter={filter}
+                flashRelativePath={flashing?.folderId === f.id ? flashing.relativePath : null}
+                menuAutoHide={menuAutoHide}
+              />
+            ))}
+            {filter && !filteredHasAny && (
+              <p className="px-2 py-3 text-xs text-muted">
+                No files match &quot;{filter}&quot;
+              </p>
+            )}
+          </div>
         </Panel>
         {gitPanel && (
           <>

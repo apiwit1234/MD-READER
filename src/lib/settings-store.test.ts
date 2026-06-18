@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS = {
   fontEnglish: 'default',
   fontThai: 'default',
   windowBackground: '',
+  showHtmlInMd: true,
 };
 
 describe('normalizeSettings', () => {
