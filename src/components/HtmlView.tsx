@@ -18,9 +18,12 @@ type Props = {
   canForward?: boolean;
   onBack?: () => void;
   onForward?: () => void;
+  /** Ctrl+wheel inside the iframe forwards a zoom step (+1 in / -1 out). */
+  onZoom?: (direction: 1 | -1) => void;
 };
 
-// Injected into the iframe; captures link clicks and forwards intent to the parent.
+// Injected into the iframe; forwards link clicks and Ctrl+wheel zoom to the parent
+// (a sandboxed iframe is a separate document, so the app's own listeners can't see them).
 const NAV_BRIDGE = `
 <script>
 document.addEventListener('click', function (e) {
@@ -31,18 +34,28 @@ document.addEventListener('click', function (e) {
   e.preventDefault();
   parent.postMessage({ type: 'pax-nav', href: href }, '*');
 }, true);
+document.addEventListener('wheel', function (e) {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  parent.postMessage({ type: 'pax-zoom', delta: e.deltaY < 0 ? 1 : -1 }, '*');
+}, { passive: false });
 </script>`;
 
-export function HtmlView({ html, relativePath, theme: _theme, onNavigate, canBack, canForward, onBack, onForward }: Props) {
+export function HtmlView({ html, relativePath, theme: _theme, onNavigate, canBack, canForward, onBack, onForward, onZoom }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const srcDoc = useMemo(() => `${html}\n${NAV_BRIDGE}`, [html]);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      // Only accept nav intents from our own rendered preview iframe.
+      // Only accept intents from our own rendered preview iframe.
       if (e.source !== iframeRef.current?.contentWindow) return;
-      const data = e.data as { type?: string; href?: string } | null;
-      if (!data || data.type !== 'pax-nav' || typeof data.href !== 'string') return;
+      const data = e.data as { type?: string; href?: string; delta?: number } | null;
+      if (!data) return;
+      if (data.type === 'pax-zoom' && (data.delta === 1 || data.delta === -1)) {
+        onZoom?.(data.delta);
+        return;
+      }
+      if (data.type !== 'pax-nav' || typeof data.href !== 'string') return;
       const link = classifyLink(data.href, relativePath);
       if (link.kind === 'external') {
         if (hasApi()) void getApi().app.openExternal(link.url);
@@ -52,7 +65,7 @@ export function HtmlView({ html, relativePath, theme: _theme, onNavigate, canBac
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [relativePath, onNavigate]);
+  }, [relativePath, onNavigate, onZoom]);
 
   return (
     <div className="flex h-full flex-col">
@@ -73,6 +86,10 @@ export function HtmlView({ html, relativePath, theme: _theme, onNavigate, canBac
         sandbox="allow-scripts"
         srcDoc={srcDoc}
         className="min-h-0 w-full flex-1 border-0 bg-white"
+        // Mirror the app's content zoom (Ctrl+=/-/0, Settings, Ctrl+wheel) into the
+        // iframe — CSS vars don't cross the document boundary, but `zoom` on the
+        // element scales its rendered content.
+        style={{ zoom: 'var(--content-zoom, 1)' }}
       />
     </div>
   );

@@ -1478,6 +1478,7 @@ export default function Page() {
                               canForward={!!htmlNav && htmlNav.key === activeKey && htmlNav.index < htmlNav.stack.length - 1}
                               onBack={() => setHtmlNav((p) => (p && p.index > 0 ? { ...p, index: p.index - 1 } : p))}
                               onForward={() => setHtmlNav((p) => (p && p.index < p.stack.length - 1 ? { ...p, index: p.index + 1 } : p))}
+                              onZoom={changeZoom}
                             />
                           ) : mdPane.isDiagram ? (
                             <DiagramView

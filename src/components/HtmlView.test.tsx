@@ -32,6 +32,15 @@ describe('HtmlView', () => {
     expect(onNavigate).toHaveBeenCalledWith('docs/b.html');
   });
 
+  it('forwards Ctrl+wheel zoom intents from its iframe', () => {
+    (globalThis as unknown as { window: { mdreader: unknown } }).window.mdreader = { app: { openExternal: vi.fn() } };
+    const onZoom = vi.fn();
+    const { getByTitle } = render(<HtmlView html="<p>x</p>" relativePath="a.html" theme="dark" onNavigate={() => {}} onZoom={onZoom} />);
+    const frame = getByTitle('HTML preview') as HTMLIFrameElement;
+    window.dispatchEvent(new MessageEvent('message', { source: frame.contentWindow, data: { type: 'pax-zoom', delta: 1 } }));
+    expect(onZoom).toHaveBeenCalledWith(1);
+  });
+
   it('ignores nav messages that did not come from its iframe', () => {
     (globalThis as unknown as { window: { mdreader: unknown } }).window.mdreader = { app: { openExternal: vi.fn() } };
     const onNavigate = vi.fn();
