@@ -11,6 +11,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { SettingsModal } from '@/components/SettingsModal';
 import { UpdateCenter } from '@/components/UpdateCenter';
 import { FestiveOverlay } from '@/components/FestiveOverlay';
+import { BatSwarm } from '@/components/BatSwarm';
 import { Settings } from 'lucide-react';
 import { themeMode } from '@/lib/themes';
 import { loadState, saveState, defaultState, clearedState, saveSearchState, loadBottomPanelState, saveBottomPanelState, loadMode, saveMode } from '@/lib/storage';
@@ -1315,6 +1316,7 @@ export default function Page() {
       <UpdateCenter />
 
       <FestiveOverlay theme={state.theme} tabCount={state.openTabs.length} />
+      <BatSwarm theme={state.theme} />
 
       {bridgeMissing && (
         <div className="bg-amber-100 px-4 py-1 text-xs text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">

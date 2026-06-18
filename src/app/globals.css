@@ -254,6 +254,38 @@ body {
   .festive-overlay { display: none; }
 }
 
+/* ---- Bat swarm (Dracula theme): one-time fly-across on activation. ---- */
+.bat-swarm {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bat-flyer {
+  position: absolute;
+  left: 0;
+  animation-name: bat-fly;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  will-change: transform;
+}
+.bat-flyer .bat {
+  animation: bat-flap 0.28s ease-in-out infinite;
+}
+@keyframes bat-fly {
+  0%   { transform: translateX(-12vw) translateY(0); }
+  50%  { transform: translateX(50vw) translateY(-6vh); }
+  100% { transform: translateX(112vw) translateY(2vh); }
+}
+@keyframes bat-flap {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(0.7); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bat-swarm { display: none; }
+}
+
 /* Default reading font: Latin → Inter, Thai → Noto Sans Thai. A font picked
    in Settings → Fonts overrides this via the article's inline style. */
 .prose-md {
