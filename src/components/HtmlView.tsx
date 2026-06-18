@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { Theme } from '@/types';
 import { classifyLink } from '@/lib/html-links';
@@ -34,10 +34,13 @@ document.addEventListener('click', function (e) {
 </script>`;
 
 export function HtmlView({ html, relativePath, theme: _theme, onNavigate, canBack, canForward, onBack, onForward }: Props) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const srcDoc = useMemo(() => `${html}\n${NAV_BRIDGE}`, [html]);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
+      // Only accept nav intents from our own rendered preview iframe.
+      if (e.source !== iframeRef.current?.contentWindow) return;
       const data = e.data as { type?: string; href?: string } | null;
       if (!data || data.type !== 'pax-nav' || typeof data.href !== 'string') return;
       const link = classifyLink(data.href, relativePath);
@@ -65,6 +68,7 @@ export function HtmlView({ html, relativePath, theme: _theme, onNavigate, canBac
         <span className="ml-1 truncate font-mono text-muted">{relativePath}</span>
       </div>
       <iframe
+        ref={iframeRef}
         title="HTML preview"
         sandbox="allow-scripts"
         srcDoc={srcDoc}

@@ -16,4 +16,10 @@ describe('classifyLink', () => {
     expect(classifyLink('style.css', 'a.html')).toEqual({ kind: 'ignore' });
     expect(classifyLink('', 'a.html')).toEqual({ kind: 'ignore' });
   });
+
+  it('rejects path-traversal and absolute-path vectors', () => {
+    expect(classifyLink('..\\..\\secret.html', 'docs/a.html')).toEqual({ kind: 'ignore' });
+    expect(classifyLink('/etc/passwd.html', 'docs/a.html')).toEqual({ kind: 'ignore' });
+    expect(classifyLink('foo\0.html', 'docs/a.html')).toEqual({ kind: 'ignore' });
+  });
 });

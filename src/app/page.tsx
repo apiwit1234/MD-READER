@@ -888,7 +888,11 @@ export default function Page() {
     if (!activeTab) return;
     const folder = state.openedFolders.find((f) => f.id === activeTab.folderId);
     if (!folder || folder.isVirtual) return;
-    const abs = `${folder.hostPath}/${toRelative}`.replace(/\\/g, '/');
+    // classifyLink guarantees toRelative has no backslashes and no `..`; normalize
+    // only the host root and assert containment so a crafted page can't escape it.
+    const root = folder.hostPath.replace(/\\/g, '/').replace(/\/+$/, '');
+    const abs = `${root}/${toRelative}`;
+    if (!abs.startsWith(`${root}/`)) { showToast('Could not open linked page'); return; }
     try {
       const res = await getApi().fs.read(abs);
       contentStoreRef.current.set(abs, res.content);
@@ -909,7 +913,8 @@ export default function Page() {
     if (!liveMdIsHtml || !activeTab) return '';
     const folder = state.openedFolders.find((f) => f.id === activeTab.folderId);
     if (!folder || folder.isVirtual) return mdPane.content;
-    const abs = `${folder.hostPath}/${htmlRelPath}`.replace(/\\/g, '/');
+    const root = folder.hostPath.replace(/\\/g, '/').replace(/\/+$/, '');
+    const abs = `${root}/${htmlRelPath}`;
     const buffered = contentStoreRef.current.get(abs);
     return buffered !== undefined ? buffered : mdPane.content;
   })();

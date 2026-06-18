@@ -16,8 +16,9 @@ describe('HtmlView', () => {
     const openExternal = vi.fn().mockResolvedValue(undefined);
     (globalThis as unknown as { window: { mdreader: unknown } }).window.mdreader = { app: { openExternal } };
     const onNavigate = vi.fn();
-    render(<HtmlView html="<a href='https://x.com'>x</a>" relativePath="a.html" theme="dark" onNavigate={onNavigate} />);
-    window.dispatchEvent(new MessageEvent('message', { data: { type: 'pax-nav', href: 'https://x.com' } }));
+    const { getByTitle } = render(<HtmlView html="<a href='https://x.com'>x</a>" relativePath="a.html" theme="dark" onNavigate={onNavigate} />);
+    const frame = getByTitle('HTML preview') as HTMLIFrameElement;
+    window.dispatchEvent(new MessageEvent('message', { source: frame.contentWindow, data: { type: 'pax-nav', href: 'https://x.com' } }));
     expect(openExternal).toHaveBeenCalledWith('https://x.com');
     expect(onNavigate).not.toHaveBeenCalled();
   });
@@ -25,8 +26,18 @@ describe('HtmlView', () => {
   it('navigates internal .html links in-app', () => {
     (globalThis as unknown as { window: { mdreader: unknown } }).window.mdreader = { app: { openExternal: vi.fn() } };
     const onNavigate = vi.fn();
-    render(<HtmlView html="<a href='b.html'>b</a>" relativePath="docs/a.html" theme="dark" onNavigate={onNavigate} />);
-    window.dispatchEvent(new MessageEvent('message', { data: { type: 'pax-nav', href: 'b.html' } }));
+    const { getByTitle } = render(<HtmlView html="<a href='b.html'>b</a>" relativePath="docs/a.html" theme="dark" onNavigate={onNavigate} />);
+    const frame = getByTitle('HTML preview') as HTMLIFrameElement;
+    window.dispatchEvent(new MessageEvent('message', { source: frame.contentWindow, data: { type: 'pax-nav', href: 'b.html' } }));
     expect(onNavigate).toHaveBeenCalledWith('docs/b.html');
+  });
+
+  it('ignores nav messages that did not come from its iframe', () => {
+    (globalThis as unknown as { window: { mdreader: unknown } }).window.mdreader = { app: { openExternal: vi.fn() } };
+    const onNavigate = vi.fn();
+    render(<HtmlView html="<a href='b.html'>b</a>" relativePath="docs/a.html" theme="dark" onNavigate={onNavigate} />);
+    // No source / foreign source → rejected.
+    window.dispatchEvent(new MessageEvent('message', { source: window, data: { type: 'pax-nav', href: 'b.html' } }));
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 });
