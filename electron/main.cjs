@@ -724,7 +724,10 @@ async function createWindow(opts = {}) {
   });
 
   // Surface renderer load failures for diagnosis instead of leaving the user with a blank window.
-  win.webContents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL) => {
+  // Only react to MAIN-frame failures: sub-frames (e.g. the sandboxed about:srcdoc iframe used
+  // by the HTML reader) must not replace the whole window. ERR_ABORTED (-3) is benign.
+  win.webContents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (!isMainFrame || errorCode === -3) return;
     if (!win.isDestroyed()) {
       const escaped = String(errorDescription).replace(/</g, '&lt;');
       const html = `<html><body style="font-family:system-ui;padding:24px;color:#b91c1c"><h2>Failed to load window</h2><pre>${escaped}</pre><p style="color:#64748b">URL: ${validatedURL}</p></body></html>`;

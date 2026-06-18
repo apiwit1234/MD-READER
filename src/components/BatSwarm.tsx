@@ -7,12 +7,12 @@ type Props = { theme: Theme };
 type Bat = { id: number; top: number; size: number; delay: number; duration: number };
 
 function makeBats(): Bat[] {
-  return Array.from({ length: 10 }, (_, id) => ({
+  return Array.from({ length: 20 }, (_, id) => ({
     id,
-    top: 8 + Math.random() * 64,        // vh
-    size: 22 + Math.random() * 22,      // px
-    delay: Math.random() * 1.2,         // s, staggered launch
-    duration: 5 + Math.random() * 2.5,  // s, flight time
+    top: 4 + Math.random() * 76,        // vh
+    size: 20 + Math.random() * 26,      // px
+    delay: Math.random() * 1.8,         // s, staggered launch
+    duration: 4.5 + Math.random() * 3,  // s, flight time
   }));
 }
 

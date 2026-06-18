@@ -180,10 +180,11 @@ export function TabBar({
               onContextMenu={(e) => openMenu(e, t)}
               onMouseDown={onTearOff ? (e) => startTearDrag(e, t) : undefined}
               className={[
-                // min-w floor keeps the close button reachable when many tabs
-                // shrink; overflow beyond that is reached via the ▾ dropdown.
-                'relative flex min-w-[5rem] cursor-pointer select-none items-center gap-2 border-r border-border px-3 py-2 text-sm',
-                t.pinned ? 'flex-[0_1_160px]' : 'flex-[0_1_220px]',
+                // Tabs size to their content (flex: 0 1 auto) so a name shows in
+                // full whenever the row has room; they shrink (and truncate) only
+                // once the strip overflows. min-w floor keeps the close button
+                // reachable when crowded; overflow beyond that uses the ▾ dropdown.
+                'relative flex min-w-[5rem] max-w-[32rem] cursor-pointer select-none items-center gap-2 border-r border-border px-3 py-2 text-sm',
                 t.active ? 'bg-bg text-fg' : 'text-muted hover:bg-surface-2',
               ].join(' ')}
             >
