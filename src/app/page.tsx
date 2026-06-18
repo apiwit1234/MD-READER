@@ -895,7 +895,9 @@ export default function Page() {
     if (!abs.startsWith(`${root}/`)) { showToast('Could not open linked page'); return; }
     try {
       const res = await getApi().fs.read(abs);
-      contentStoreRef.current.set(abs, res.content);
+      // seed (baseline + buffer) — this is fresh disk content, NOT an edit, so it
+      // must not register as dirty (a dirty buffer blocks window close via beforeunload).
+      contentStoreRef.current.seed(abs, res.content);
       setContentCache((c) => ({ ...c, [abs]: { content: res.content, hostPath: abs } }));
       const key = `${activeTab.folderId}::${activeTab.relativePath}`;
       setHtmlNav((prev) => {
