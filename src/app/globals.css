@@ -339,22 +339,30 @@ select option {
   color: rgb(var(--c-fg));
 }
 
-/* Themed scrollbars (app chrome + xterm viewport). */
+/* Themed scrollbars (app chrome + xterm viewport). Thumb uses the foreground
+   token at low alpha so it stays visible across every theme, brightening to the
+   accent on hover. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--c-border)) rgb(var(--c-surface));
+  scrollbar-color: rgb(var(--c-fg) / 0.28) rgb(var(--c-surface));
 }
 ::-webkit-scrollbar,
-.xterm-viewport::-webkit-scrollbar { width: 9px; height: 9px; }
+.xterm-viewport::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track,
 .xterm-viewport::-webkit-scrollbar-track { background: rgb(var(--c-surface)); }
 ::-webkit-scrollbar-thumb,
 .xterm-viewport::-webkit-scrollbar-thumb {
-  background: rgb(var(--c-border));
-  border-radius: 6px;
+  background: rgb(var(--c-fg) / 0.28);
+  border: 2px solid rgb(var(--c-surface));
+  border-radius: 8px;
+  min-height: 28px;
 }
 ::-webkit-scrollbar-thumb:hover,
 .xterm-viewport::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-accent)); }
+
+/* Opt-in: always reserve room for the scrollbar so content doesn't shift when it
+   appears (used by the sidebar file list). */
+.themed-scroll { scrollbar-gutter: stable; }
 
 /* Search find-hit highlights (from the search feature) — preserved.
    The `.dark` class is applied for any dark-base theme (see page.tsx),

@@ -17,6 +17,7 @@ const DEFAULTS: AppSettings = {
   fontSplit: false,
   fontEnglish: 'default',
   fontThai: 'default',
+  showHtmlInMd: true,
 };
 
 function stubApi(overrides: { check?: unknown; download?: unknown } = {}) {
@@ -74,7 +75,7 @@ describe('UpdatesSection', () => {
   it('disables controls without the electron bridge', () => {
     vi.mocked(hasApi).mockReturnValue(false);
     render(<UpdatesSection settings={DEFAULTS} onUpdateSettings={vi.fn()} />);
-    expect(screen.getByRole('checkbox', { name: /check for updates at startup/i })).toBeDisabled();
+    expect(screen.getByRole('switch', { name: /check for updates at startup/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /^check for updates$/i })).toBeDisabled();
   });
 });

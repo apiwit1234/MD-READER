@@ -13,6 +13,7 @@ const SETTINGS: AppSettings = {
   fontSplit: false,
   fontEnglish: 'default',
   fontThai: 'default',
+  showHtmlInMd: true,
 };
 
 function setup(overrides = {}) {
@@ -81,7 +82,7 @@ describe('SettingsModal', () => {
     setup();
     await user.click(screen.getByRole('button', { name: 'Updates' }));
     // No electron bridge in tests -> controls are disabled.
-    expect(screen.getByRole('checkbox', { name: /check for updates at startup/i })).toBeDisabled();
+    expect(screen.getByRole('switch', { name: /check for updates at startup/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /^check for updates$/i })).toBeDisabled();
   });
 
