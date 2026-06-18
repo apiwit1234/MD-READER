@@ -237,10 +237,11 @@ body {
 }
 .festive-santa {
   position: absolute;
-  top: 9%;
+  top: 8%;
   left: 0;
-  width: 190px;
-  filter: drop-shadow(0 0 6px rgb(248 178 41 / 0.55));
+  width: 280px;
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.35));
   animation: festive-ride 9s linear forwards;
   will-change: transform;
 }
