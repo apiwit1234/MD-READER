@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useAutoHideMenu } from '@/lib/useAutoHideMenu';
+import { isTruncated } from '@/lib/dom-truncation';
 import { ChevronDown, Clipboard, ExternalLink, FolderOpen, Pin, PinOff, RefreshCw, X } from 'lucide-react';
 
 export type TabView = {
@@ -51,6 +52,7 @@ export function TabBar({
 }: Props) {
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  const [tip, setTip] = useState<{ filename: string; relativePath: string; x: number; y: number } | null>(null);
   const menuHide = useAutoHideMenu(menuAutoHide ?? true, !!menu, () => setMenu(null));
   const listHide = useAutoHideMenu(menuAutoHide ?? true, listOpen, () => setListOpen(false));
   const [dragGhost, setDragGhost] = useState<{ tab: TabView; x: number; y: number; mode: 'inside' | 'outside' | 'terminal' } | null>(null);
@@ -177,7 +179,6 @@ export function TabBar({
               onClick={() => onFocus(t)}
               onContextMenu={(e) => openMenu(e, t)}
               onMouseDown={onTearOff ? (e) => startTearDrag(e, t) : undefined}
-              title={t.relativePath}
               className={[
                 // min-w floor keeps the close button reachable when many tabs
                 // shrink; overflow beyond that is reached via the ▾ dropdown.
@@ -202,7 +203,18 @@ export function TabBar({
               {t.updating && (
                 <span aria-label="updating" title="updating from disk" className="inline-block animate-spin text-accent"><RefreshCw className="h-3 w-3" /></span>
               )}
-              <span className="min-w-0 flex-1 truncate">{t.filename}</span>
+              <span
+                className="min-w-0 flex-1 truncate"
+                onMouseEnter={(e) => {
+                  if (isTruncated(e.currentTarget)) {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setTip({ filename: t.filename, relativePath: t.relativePath, x: r.left, y: r.bottom + 4 });
+                  }
+                }}
+                onMouseLeave={() => setTip(null)}
+              >
+                {t.filename}
+              </span>
               {!t.pinned && (
                 <button
                   type="button"
@@ -236,7 +248,6 @@ export function TabBar({
                 <div
                   key={`${t.folderId}::${t.relativePath}`}
                   onClick={() => { onFocus(t); setListOpen(false); }}
-                  title={t.relativePath}
                   className={[
                     'flex cursor-pointer items-center gap-2 px-3 py-1 text-xs',
                     t.active ? 'bg-accent-soft text-accent' : 'text-fg hover:bg-surface-2',
@@ -246,7 +257,18 @@ export function TabBar({
                   {t.pinned && <span className="text-warn"><Pin className="h-3 w-3" /></span>}
                   {t.dirty && <span className="text-warn">●</span>}
                   {t.updating && <span className="inline-block animate-spin text-accent"><RefreshCw className="h-3 w-3" /></span>}
-                  <span className="flex-1 truncate">{t.filename}</span>
+                  <span
+                    className="flex-1 truncate"
+                    onMouseEnter={(e) => {
+                      if (isTruncated(e.currentTarget)) {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setTip({ filename: t.filename, relativePath: t.relativePath, x: r.left, y: r.bottom + 4 });
+                      }
+                    }}
+                    onMouseLeave={() => setTip(null)}
+                  >
+                    {t.filename}
+                  </span>
                   {!t.pinned && (
                     <button
                       type="button"
@@ -329,6 +351,16 @@ export function TabBar({
               Close
             </MenuItem>
           )}
+        </div>
+      )}
+
+      {tip && (
+        <div
+          className="panel-float pointer-events-none fixed z-[110] max-w-[420px] px-3 py-1.5 text-xs"
+          style={{ left: tip.x, top: tip.y }}
+        >
+          <div className="font-medium text-fg">{tip.filename}</div>
+          <div className="truncate text-[11px] text-muted">{tip.relativePath}</div>
         </div>
       )}
     </>
