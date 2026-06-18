@@ -76,6 +76,7 @@ type MdReader = {
     openLog: () => Promise<string>;
     logPath: () => Promise<string>;
     versionInfo: () => Promise<{ current: string; updatedFrom: string | null }>;
+    openExternal: (url: string) => Promise<void>;
   };
   git: {
     detect: (folderPath: string) => Promise<GitDetect>;

@@ -173,6 +173,12 @@ ipcMain.handle('update:install', () => {
 
 // Tells the renderer (once per version change) that the app was just updated,
 // so it can show an "updated to vX" confirmation after the silent install.
+ipcMain.handle('app:openExternal', async (_e, url) => {
+  if (typeof url === 'string' && /^(https?:|mailto:)/i.test(url)) {
+    await shell.openExternal(url);
+  }
+});
+
 ipcMain.handle('app:versionInfo', () => {
   const store = getSettingsStore();
   const lastRun = store.read().lastRunVersion;

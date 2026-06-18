@@ -65,6 +65,7 @@ contextBridge.exposeInMainWorld('mdreader', {
     openLog: () => ipcRenderer.invoke('app:openLog'),
     logPath: () => ipcRenderer.invoke('app:logPath'),
     versionInfo: () => ipcRenderer.invoke('app:versionInfo'),
+    openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
   },
   git: {
     detect: (folderPath) => ipcRenderer.invoke('git:detect', folderPath),
