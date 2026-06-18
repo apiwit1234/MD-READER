@@ -1347,6 +1347,7 @@ export default function Page() {
               folders={state.openedFolders}
               activeFile={activeFileForSidebar}
               markdownOnly={mode === 'md'}
+              includeHtml={appSettings?.showHtmlInMd ?? true}
               menuAutoHide={appSettings?.contextMenuAutoHide ?? true}
               gitPanel={
                 <GitPanel

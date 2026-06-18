@@ -8,3 +8,8 @@ export function isMermaidPath(p: string): boolean {
   const l = p.toLowerCase();
   return l.endsWith('.mmd') || l.endsWith('.mermaid');
 }
+
+export function isHtmlPath(p: string): boolean {
+  const l = p.toLowerCase();
+  return l.endsWith('.html') || l.endsWith('.htm');
+}

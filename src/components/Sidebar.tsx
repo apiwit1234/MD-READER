@@ -19,6 +19,7 @@ type Props = {
   folders: OpenedFolder[];
   activeFile: { folderId: string; relativePath: string } | null;
   markdownOnly?: boolean;
+  includeHtml?: boolean;
   gitPanel?: ReactNode;
   /** Toggle chip state — drives animated collapse/expand of the git split.
    *  The Panel stays mounted so the global [data-panel] flex transition runs. */
@@ -39,6 +40,7 @@ export function Sidebar({
   folders,
   activeFile,
   markdownOnly,
+  includeHtml,
   gitPanel,
   gitVisible,
   onGitVisibilityChange,
@@ -212,6 +214,7 @@ export function Sidebar({
               folder={f}
               activeFile={activeFile}
               markdownOnly={markdownOnly}
+              includeHtml={includeHtml}
               onPickFile={onPickFile}
               onClose={onCloseFolder}
               onCopyFolderPath={onCopyFolderPath}

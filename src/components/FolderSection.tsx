@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FsNode, OpenedFolder } from '@/types';
 import { FileTree } from './FileTree';
 import { getApi, hasApi } from '@/lib/electron-api';
-import { filterTree, pruneToMarkdown } from '@/lib/filter';
+import { filterTree, pruneToReadable } from '@/lib/filter';
 import { progressPercent } from '@/lib/load-progress';
 import { useAutoHideMenu } from '@/lib/useAutoHideMenu';
 import { ChevronDown, ChevronRight, Clipboard, RefreshCw, X } from 'lucide-react';
@@ -18,6 +18,7 @@ type Props = {
   filter?: string;
   flashRelativePath?: string | null;
   markdownOnly?: boolean;
+  includeHtml?: boolean;
   /** Settings → Behavior: context menus close shortly after the mouse leaves. */
   menuAutoHide?: boolean;
 };
@@ -46,6 +47,7 @@ export function FolderSection({
   filter,
   flashRelativePath,
   markdownOnly,
+  includeHtml,
   menuAutoHide,
 }: Props) {
   const [tree, setTree] = useState<FsNode | null>(null);
@@ -175,7 +177,7 @@ export function FolderSection({
   const activePath = activeFile?.folderId === folder.id ? activeFile.relativePath : null;
   const tint = folder.color + '22';
 
-  const base = markdownOnly && tree ? pruneToMarkdown(tree) : tree;
+  const base = markdownOnly && tree ? pruneToReadable(tree, !!includeHtml) : tree;
   const displayed = filter && base ? filterTree(base, filter) : base;
   if (filter && displayed === null) return null;
 

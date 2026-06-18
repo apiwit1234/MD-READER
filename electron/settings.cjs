@@ -15,6 +15,7 @@ const DEFAULTS = {
   fontEnglish: 'default',
   fontThai: 'default',
   windowBackground: '',        // '#rrggbb' of last theme surface — title bar + launch bg
+  showHtmlInMd: true,          // MD mode also reads .html files + shows them in the sidebar
 };
 
 const UI_SIZES = ['small', 'medium', 'large'];
@@ -38,6 +39,7 @@ function normalizeSettings(x) {
     if (typeof x.fontEnglish === 'string' && x.fontEnglish) out.fontEnglish = x.fontEnglish;
     if (typeof x.fontThai === 'string' && x.fontThai) out.fontThai = x.fontThai;
     if (typeof x.windowBackground === 'string' && HEX_COLOR.test(x.windowBackground)) out.windowBackground = x.windowBackground;
+    if (typeof x.showHtmlInMd === 'boolean') out.showHtmlInMd = x.showHtmlInMd;
   }
   return out;
 }

@@ -36,6 +36,7 @@ export type AppSettings = {
   fontSplit: boolean;
   fontEnglish: string;
   fontThai: string;
+  showHtmlInMd: boolean;
 };
 
 export type GitResult = { ok: boolean; code: number; stdout: string; stderr: string };

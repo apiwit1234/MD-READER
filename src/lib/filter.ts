@@ -1,13 +1,14 @@
 import type { FsNode } from '@/types';
+import { isMarkdownPath, isHtmlPath } from './file-kinds';
 
-/** Keep only markdown files, dropping directories that contain no markdown. */
-export function pruneToMarkdown(node: FsNode): FsNode | null {
+/** Keep markdown (and optionally HTML) files, dropping dirs with no kept files. */
+export function pruneToReadable(node: FsNode, includeHtml: boolean): FsNode | null {
   if (node.type === 'file') {
-    const n = node.name.toLowerCase();
-    return n.endsWith('.md') || n.endsWith('.markdown') ? node : null;
+    const keep = isMarkdownPath(node.name) || (includeHtml && isHtmlPath(node.name));
+    return keep ? node : null;
   }
   const keptChildren = (node.children ?? [])
-    .map(pruneToMarkdown)
+    .map((c) => pruneToReadable(c, includeHtml))
     .filter((c): c is FsNode => c !== null);
   return keptChildren.length > 0 ? { ...node, children: keptChildren } : null;
 }

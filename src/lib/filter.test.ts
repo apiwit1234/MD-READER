@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterTree, pruneToMarkdown } from './filter';
+import { filterTree, pruneToReadable } from './filter';
 import type { FsNode } from '@/types';
 
 const fixture: FsNode = {
@@ -57,7 +57,7 @@ describe('filterTree', () => {
   });
 });
 
-describe('pruneToMarkdown', () => {
+describe('pruneToReadable', () => {
   const mixed: FsNode = {
     name: 'root', type: 'dir', relativePath: '', children: [
       { name: 'src', type: 'dir', relativePath: 'src', children: [
@@ -73,7 +73,7 @@ describe('pruneToMarkdown', () => {
   };
 
   it('keeps only markdown files and drops markdown-free directories', () => {
-    const out = pruneToMarkdown(mixed);
+    const out = pruneToReadable(mixed, false);
     const names = out?.children?.map((c) => c.name);
     expect(names).toContain('src');
     expect(names).toContain('README.md');
@@ -83,12 +83,30 @@ describe('pruneToMarkdown', () => {
     expect(src?.children?.map((c) => c.name)).toEqual(['notes.md']);
   });
 
-  it('returns null when a directory has no markdown anywhere', () => {
+  it('returns null when a directory has no readable files anywhere', () => {
     const noMd: FsNode = {
       name: 'root', type: 'dir', relativePath: '', children: [
         { name: 'a.ts', type: 'file', relativePath: 'a.ts' },
       ],
     };
-    expect(pruneToMarkdown(noMd)).toBeNull();
+    expect(pruneToReadable(noMd, false)).toBeNull();
+  });
+
+  const withHtml: FsNode = {
+    name: 'root', type: 'dir', relativePath: '', children: [
+      { name: 'a.md', type: 'file', relativePath: 'a.md' },
+      { name: 'page.html', type: 'file', relativePath: 'page.html' },
+      { name: 'pic.png', type: 'file', relativePath: 'pic.png' },
+    ],
+  };
+
+  it('keeps only markdown when includeHtml is false', () => {
+    const out = pruneToReadable(withHtml, false)!;
+    expect(out.children!.map((c) => c.name)).toEqual(['a.md']);
+  });
+
+  it('keeps markdown and html when includeHtml is true', () => {
+    const out = pruneToReadable(withHtml, true)!;
+    expect(out.children!.map((c) => c.name).sort()).toEqual(['a.md', 'page.html']);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMarkdownPath, isMermaidPath } from './file-kinds';
+import { isMarkdownPath, isMermaidPath, isHtmlPath } from './file-kinds';
 
 describe('file kinds', () => {
   it('detects markdown', () => {
@@ -12,5 +12,12 @@ describe('file kinds', () => {
     expect(isMermaidPath('x/flow.mmd')).toBe(true);
     expect(isMermaidPath('x/flow.MERMAID')).toBe(true);
     expect(isMermaidPath('x/flow.md')).toBe(false);
+  });
+
+  it('detects html files', () => {
+    expect(isHtmlPath('a/b/page.html')).toBe(true);
+    expect(isHtmlPath('PAGE.HTM')).toBe(true);
+    expect(isHtmlPath('readme.md')).toBe(false);
+    expect(isHtmlPath('x.htmlx')).toBe(false);
   });
 });

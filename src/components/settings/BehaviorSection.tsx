@@ -63,6 +63,21 @@ export function BehaviorSection({ settings, onUpdateSettings }: Props) {
           </button>
         </span>
       </div>
+
+      <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Markdown mode</div>
+      <label className="flex items-center justify-between rounded-theme border border-border p-2.5 text-sm">
+        <span>
+          Show HTML files in MD mode
+          <span className="block text-xs text-muted">List .html files in the sidebar and render them in the reader</span>
+        </span>
+        <input
+          type="checkbox"
+          aria-label="Show HTML files in MD mode"
+          checked={settings?.showHtmlInMd ?? true}
+          disabled={!settings}
+          onChange={(e) => onUpdateSettings({ showHtmlInMd: e.target.checked })}
+        />
+      </label>
     </div>
   );
 }
